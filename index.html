@@ -470,7 +470,7 @@ function ji() {
       setAuthLoading(false);
       if (loginTab === "staff") {
         let uTrim = staffUsername.trim();
-        let adminEmail = uTrim.toLowerCase() === "software cios" ? "engcliff@j5internationalchurch.org" : uTrim.toLowerCase() === "archbishop makururu" ? "admin@j5internationalchurch.org" : "";
+        let adminEmail = ["software cios", "engcliff@j5internationalchurch.org"].includes(uTrim.toLowerCase()) ? "engcliff@j5internationalchurch.org" : ["archbishop makururu", "admin@j5internationalchurch.org"].includes(uTrim.toLowerCase()) ? "admin@j5internationalchurch.org" : "";
         if (adminEmail && window.cyberlyxSupabase) {
           let { data: adminAuthData, error: adminAuthError } = await window.cyberlyxSupabase.auth.signInWithPassword({ email: adminEmail, password: staffPassword });
           if (!adminAuthError && adminAuthData.user) {
@@ -484,37 +484,10 @@ function ji() {
             showToast("Welcome " + adminName);
             return;
           }
-          setAuthError("Access Denied - Invalid online Admin credentials");
+          setAuthError("Online Admin login failed: " + (adminAuthError?.message || "check the email and Supabase password"));
           return;
         }
-        if (uTrim === "Software CIOS" && staffPassword === "#Pass2026") {
-          setIsLoggedIn(true);
-          setCurrentUser({ username: "Software CIOS", role: "Prophet", branch: "MVUMA HQ" });
-          setActiveTab("overview");
-          setAuditLogs(c => ["[" + getUtcTime() + " UTC] ROOT AUTH - Software CIOS - MVUMA HQ", ...c]);
-          showToast("Welcome ROOT Commander - Software CIOS");
-        } else if (uTrim === "Archbishop Makururu" && staffPassword === "#archbishop4312") {
-          setIsLoggedIn(true);
-          setCurrentUser({ username: "Archbishop Makururu", role: "Archbishop", branch: "MVUMA HQ", perms: ["all"] });
-          setActiveTab("overview");
-          setAuditLogs(c => ["[" + getUtcTime() + " UTC] ARCHBISHOP AUTH - Archbishop Makururu - MVUMA HQ", ...c]);
-          showToast("Welcome Archbishop Makururu");
-        } else {
-          let found = staffList.find(s => s.active && s.username.toLowerCase() === uTrim.toLowerCase() && s.password === staffPassword);
-          if (found) {
-            setIsLoggedIn(true);
-            setCurrentUser(found);
-            if (found.role === "Media Team") {
-              setActiveTab("media");
-            } else {
-              setActiveTab("overview");
-            }
-            setAuditLogs(c => ["[" + getUtcTime() + " UTC] STAFF AUTH - " + found.username + " (" + found.role + ")", ...c]);
-            showToast("Welcome " + found.username + " (" + found.role + ")");
-          } else {
-            setAuthError("Access Denied - Invalid staff credentials");
-          }
-        }
+        setAuthError("Staff login must use a registered online account");
       } else {
         if (memberAuthMode === "login") {
           let query = memberIdentifier.trim().toLowerCase();
