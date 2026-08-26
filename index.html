@@ -114,6 +114,7 @@ function ji() {
   let [authError, setAuthError] = M.useState("");
   let [authAttempts, setAuthAttempts] = M.useState(0);
   let [authLoading, setAuthLoading] = M.useState(false);
+  let [isAuthReady, setIsAuthReady] = M.useState(false);
   let [currentUser, setCurrentUser] = M.useState(null);
   let [memberProfile, setMemberProfile] = M.useState({ photoUrl: "", familyMembers: [], burialSocietyRegistered: false, burialSocietyPackage: "" });
   let [profileSaving, setProfileSaving] = M.useState(false);
@@ -198,6 +199,36 @@ function ji() {
   M.default.useEffect(() => { saveStored("j5_comments", liveComments); }, [liveComments]);
   M.default.useEffect(() => { saveStored("j5_assets", assetList); }, [assetList]);
   M.default.useEffect(() => { saveStored("j5_events", eventList); }, [eventList]);
+
+  M.default.useEffect(() => {
+    if (!window.cyberlyxSupabase) {
+      setIsAuthReady(true);
+      return;
+    }
+    let restoreSession = async () => {
+      let { data } = await window.cyberlyxSupabase.auth.getSession();
+      let user = data?.session?.user;
+      if (user) {
+        let email = (user.email || "").toLowerCase();
+        if (email === "engcliff@j5internationalchurch.org" || email === "admin@j5internationalchurch.org") {
+          let isArchbishop = email === "admin@j5internationalchurch.org";
+          setCurrentUser({ authUserId: user.id, username: isArchbishop ? "Archbishop Makururu" : "Software CIOS", email, role: isArchbishop ? "Archbishop" : "Prophet", branch: "MVUMA HQ", perms: ["all"] });
+          setIsLoggedIn(true);
+          setActiveTab("overview");
+        } else {
+          let { data: profiles } = await window.cyberlyxSupabase.from("members").select("*").eq("auth_user_id", user.id).limit(1);
+          let profile = profiles?.[0];
+          let branch = profile?.branch_id ? (branches.find(item => item.id === profile.branch_id)?.name || profile.branch_id) : (user.user_metadata?.branch || "MVUMA HQ");
+          setMemberProfile({ photoUrl: profile?.photo_url || "", familyMembers: profile?.family_members || [], burialSocietyRegistered: !!profile?.burial_society_registered, burialSocietyPackage: profile?.burial_society_package || "" });
+          setCurrentUser({ authUserId: user.id, username: profile?.full_name || user.user_metadata?.full_name || email.split("@")[0], role: "Member", branch, memberId: profile?.member_code || "J5-MEM-" + user.id.slice(0, 8).toUpperCase(), phone: profile?.phone || user.user_metadata?.phone || "", email, tithe: profile?.tithe_pledge || "$0", joined: profile?.joined_date || "" });
+          setIsLoggedIn(true);
+          setActiveTab("member-portal");
+        }
+      }
+      setIsAuthReady(true);
+    };
+    restoreSession();
+  }, []);
 
   M.default.useEffect(() => {
     if (!window.cyberlyxSupabase) return;
@@ -577,6 +608,7 @@ function ji() {
   };
 
   const handleLogout = () => {
+    if (window.cyberlyxSupabase) window.cyberlyxSupabase.auth.signOut();
     setIsLoggedIn(false);
     setCurrentUser(null);
     setStaffPassword("");
@@ -862,7 +894,7 @@ function ji() {
     if (window.cyberlyxSupabase) {
       let { data, error } = await window.cyberlyxSupabase.from("media_tasks").insert({ title: t.label, status: "Pending" }).select().single();
       if (error) {
-        showToast("Task could not be saved online");
+        showToast("Task save failed: " + error.message);
         return;
       }
       t = { ...t, id: data.id };
@@ -877,7 +909,7 @@ function ji() {
     if (window.cyberlyxSupabase) {
       let { error } = await window.cyberlyxSupabase.from("media_tasks").delete().eq("id", id);
       if (error) {
-        showToast("Task could not be deleted online");
+        showToast("Task delete failed: " + error.message);
         return;
       }
     }
@@ -889,7 +921,7 @@ function ji() {
     if (window.cyberlyxSupabase) {
       let { error } = await window.cyberlyxSupabase.from("media_tasks").update({ status: done ? "Done" : "Pending" }).eq("id", task.id);
       if (error) {
-        showToast("Task status could not be updated online");
+        showToast("Task update failed: " + error.message);
         return;
       }
     }
@@ -911,7 +943,7 @@ function ji() {
     if (window.cyberlyxSupabase) {
       let { data, error } = await window.cyberlyxSupabase.from("media_assets").insert({ name: asset.name, asset_type: asset.type, file_size: asset.size, asset_url: asset.url }).select().single();
       if (error) {
-        showToast("Asset could not be saved online");
+        showToast("Asset save failed: " + error.message);
         return;
       }
       asset = { ...asset, id: data.id };
@@ -927,7 +959,7 @@ function ji() {
     if (window.cyberlyxSupabase) {
       let { error } = await window.cyberlyxSupabase.from("media_assets").delete().eq("name", assetName);
       if (error) {
-        showToast("Asset could not be deleted online");
+        showToast("Asset delete failed: " + error.message);
         return;
       }
     }
@@ -943,7 +975,7 @@ function ji() {
         ? await window.cyberlyxSupabase.from("event_rsvps").upsert({ event_id: eventId, user_id: currentUser.authUserId, attending: true })
         : await window.cyberlyxSupabase.from("event_rsvps").delete().eq("event_id", eventId).eq("user_id", currentUser.authUserId);
       if (error) {
-        showToast("RSVP could not be saved online");
+        showToast("RSVP save failed: " + error.message);
         return;
       }
     }
@@ -1035,6 +1067,9 @@ function ji() {
   }, [liveSyncEnabled]);
 
   // LOGIN / SIGNUP SCREEN
+  if (!isAuthReady) {
+    return d("div", { className: "min-h-screen w-full bg-[#020617] text-white flex items-center justify-center text-[11px] tracking-widest", children: "RESTORING SECURE SESSION..." });
+  }
   if (!isLoggedIn) {
     return d("div", {
       className: "min-h-screen w-full max-w-[100vw] bg-[#020617] text-white flex items-center justify-center p-3 sm:p-4 relative overflow-hidden",
