@@ -252,7 +252,13 @@ function ji() {
     ["events", "media_assets", "media_tasks"].forEach(table => {
       channels.push(window.cyberlyxSupabase.channel("cyberlyx-" + table + "-live").on("postgres_changes", { event: "*", schema: "public", table }, loadSharedData).subscribe());
     });
-    return () => channels.forEach(channel => window.cyberlyxSupabase.removeChannel(channel));
+    let refreshTimer = setInterval(loadSharedData, 5000);
+    window.addEventListener("focus", loadSharedData);
+    return () => {
+      channels.forEach(channel => window.cyberlyxSupabase.removeChannel(channel));
+      clearInterval(refreshTimer);
+      window.removeEventListener("focus", loadSharedData);
+    };
   }, []);
 
   M.default.useEffect(() => {
