@@ -34,10 +34,10 @@ var G1 = [
 ];
 
 var J1 = [
-  { id: "s1", username: "Software CIOS", password: "#Pass2026", role: "Prophet", branch: "MVUMA HQ", perms: ["all"], active: true, twoFA: true, lastLogin: "2026-05-10 14:32 UTC" },
-  { id: "s2", username: "media.lead", password: "J5-4829-2026!", role: "Media Team", branch: "MVUMA HQ", perms: ["media", "pulpit"], active: true, twoFA: false, lastLogin: "2026-05-11 08:12 UTC" },
-  { id: "s3", username: "Archbishop Makururu", password: "#archbishop4312", role: "Archbishop", branch: "MVUMA HQ", perms: ["all"], active: true, twoFA: true, lastLogin: "2026-05-09 19:05 UTC" },
-  { id: "s4", username: "finance.j5", password: "J5-7731-2026!", role: "Finance", branch: "MVUMA HQ", perms: ["finance"], active: true, twoFA: false, lastLogin: "2026-05-11 10:01 UTC" }
+  { id: "s1", username: "Software CIOS", role: "Prophet", branch: "MVUMA HQ", perms: ["all"], active: true, twoFA: true, lastLogin: "2026-05-10 14:32 UTC" },
+  { id: "s2", username: "media.lead", role: "Media Team", branch: "MVUMA HQ", perms: ["media", "pulpit"], active: true, twoFA: false, lastLogin: "2026-05-11 08:12 UTC" },
+  { id: "s3", username: "Archbishop Makururu", role: "Archbishop", branch: "MVUMA HQ", perms: ["all"], active: true, twoFA: true, lastLogin: "2026-05-09 19:05 UTC" },
+  { id: "s4", username: "finance.j5", role: "Finance", branch: "MVUMA HQ", perms: ["finance"], active: true, twoFA: false, lastLogin: "2026-05-11 10:01 UTC" }
 ];
 
 var initialArkMembers = [
@@ -140,7 +140,7 @@ function ji() {
   let [selectedMediaChannels, setSelectedMediaChannels] = M.useState(["Facebook - Dr Andby Makururu"]);
   let [broadcastingState, setBroadcastingState] = M.useState("");
 
-  let [staffList, setStaffList] = M.useState(() => getStored("j5_staff", J1));
+  let [staffList, setStaffList] = M.useState(() => getStored("j5_staff", J1).map(staff => ({ ...staff, password: "" })));
   let [newStaffForm, setNewStaffForm] = M.useState({ username: "", password: "", role: "Media Team", branch: "MVUMA HQ" });
   let [staffPasswordDrafts, setStaffPasswordDrafts] = M.useState({});
   let [positions, setPositions] = M.useState(() => getStored("j5_positions", [
