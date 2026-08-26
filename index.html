@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -729,8 +729,16 @@ function ji() {
     setBranchForm({ ...b });
   };
 
-  const hd = () => {
+  const hd = async () => {
     if (editingBranch) {
+      let updatedBranch = { ...editingBranch, ...branchForm, members: Number(branchForm.members) || 0 };
+      if (window.cyberlyxSupabase) {
+        let { error } = await window.cyberlyxSupabase.from("branches").update({ name: updatedBranch.name, province: updatedBranch.province, country: updatedBranch.country, prophet: updatedBranch.pastor, phone: updatedBranch.phone, address: updatedBranch.address, gps: updatedBranch.gps, members: updatedBranch.members, code: updatedBranch.code, status: updatedBranch.status, founded: updatedBranch.founded, notes: updatedBranch.notes, is_hq: !!updatedBranch.isHQ }).eq("id", editingBranch.id);
+        if (error) {
+          showToast("Branch could not be updated online");
+          return;
+        }
+      }
       setBranches(c => c.map(y => {
         if (y.id === editingBranch.id) {
           return { ...y, ...branchForm, members: Number(branchForm.members) || 0 };
@@ -761,6 +769,13 @@ function ji() {
         founded: branchForm.founded || new Date().getFullYear().toString(),
         notes: branchForm.notes || ""
       };
+      if (window.cyberlyxSupabase) {
+        let { error } = await window.cyberlyxSupabase.from("branches").insert({ id: newB.id, name: newB.name, province: newB.province, country: newB.country, prophet: newB.pastor, phone: newB.phone, address: newB.address, gps: newB.gps, members: newB.members, code: newB.code, status: newB.status, founded: newB.founded, notes: newB.notes, is_hq: newB.isHQ });
+        if (error) {
+          showToast("Branch could not be created online");
+          return;
+        }
+      }
       if (newB.isHQ) {
         setBranches(y => [newB, ...y.map(t => ({ ...t, isHQ: false }))]);
       } else {
@@ -773,8 +788,15 @@ function ji() {
     setBranchForm({});
   };
 
-  const handleUpdateBranchMember = (id, newMembers) => {
+  const handleUpdateBranchMember = async (id, newMembers) => {
     let val = parseInt(newMembers) || 0;
+    if (window.cyberlyxSupabase) {
+      let { error } = await window.cyberlyxSupabase.from("branches").update({ members: val }).eq("id", id);
+      if (error) {
+        showToast("Member count could not be updated online");
+        return;
+      }
+    }
     setBranches(prev => prev.map(b => b.id === id ? { ...b, members: val } : b));
   };
 
@@ -817,29 +839,58 @@ function ji() {
     setTimeout(() => setBroadcastingState(""), 4000);
   };
 
-  const handlePushAllContent = () => {
+  const handlePushAllContent = async () => {
     setBroadcastingState("Pushed to All Platforms • Dr Andby Makururu Facebook • IG • YT");
     setTasks(c => c.map(y => ({ ...y, done: true })));
+    if (window.cyberlyxSupabase) {
+      await window.cyberlyxSupabase.from("media_tasks").update({ status: "Done" }).neq("status", "Done");
+    }
     setAuditLogs(y => ["[" + getUtcTime() + " UTC] Global push executed to all social channels", ...y]);
     showToast("Pushed to all social platforms!");
     setTimeout(() => setBroadcastingState(""), 4000);
   };
 
-  const handleAddTask = () => {
+  const handleAddTask = async () => {
     if (!newTaskInput.trim()) return;
     let t = { id: "t_" + Date.now(), label: newTaskInput.trim(), done: false };
+    if (window.cyberlyxSupabase) {
+      let { data, error } = await window.cyberlyxSupabase.from("media_tasks").insert({ title: t.label, status: "Pending" }).select().single();
+      if (error) {
+        showToast("Task could not be saved online");
+        return;
+      }
+      t = { ...t, id: data.id };
+    }
     setTasks(c => [...c, t]);
     setNewTaskInput("");
     setAuditLogs(y => ["[" + getUtcTime() + " UTC] New media task added: " + t.label, ...y]);
     showToast("New media task added");
   };
 
-  const handleDeleteTask = (id) => {
+  const handleDeleteTask = async (id) => {
+    if (window.cyberlyxSupabase) {
+      let { error } = await window.cyberlyxSupabase.from("media_tasks").delete().eq("id", id);
+      if (error) {
+        showToast("Task could not be deleted online");
+        return;
+      }
+    }
     setTasks(c => c.filter(t => t.id !== id));
     showToast("Task removed");
   };
 
-  const handleAddAsset = () => {
+  const updateMediaTaskStatus = async (task, done) => {
+    if (window.cyberlyxSupabase) {
+      let { error } = await window.cyberlyxSupabase.from("media_tasks").update({ status: done ? "Done" : "Pending" }).eq("id", task.id);
+      if (error) {
+        showToast("Task status could not be updated online");
+        return;
+      }
+    }
+    setTasks(items => items.map(item => item.id === task.id ? { ...item, done } : item));
+  };
+
+  const handleAddAsset = async () => {
     if (!newAssetForm.name) {
       showToast("Asset name required");
       return;
@@ -851,6 +902,14 @@ function ji() {
       date: "Just now",
       url: newAssetForm.url || "https://j5mediahub.vercel.app/assets/new.jpg"
     };
+    if (window.cyberlyxSupabase) {
+      let { data, error } = await window.cyberlyxSupabase.from("media_assets").insert({ name: asset.name, asset_type: asset.type, file_size: asset.size, asset_url: asset.url }).select().single();
+      if (error) {
+        showToast("Asset could not be saved online");
+        return;
+      }
+      asset = { ...asset, id: data.id };
+    }
     setAssetLibrary(prev => [asset, ...prev]);
     setIsAddAssetOpen(false);
     setNewAssetForm({ name: "", type: "IMG", size: "1.5 MB", url: "" });
@@ -858,12 +917,30 @@ function ji() {
     showToast("Asset added to Media Hub Library");
   };
 
-  const handleDeleteAsset = (assetName) => {
+  const handleDeleteAsset = async (assetName) => {
+    if (window.cyberlyxSupabase) {
+      let { error } = await window.cyberlyxSupabase.from("media_assets").delete().eq("name", assetName);
+      if (error) {
+        showToast("Asset could not be deleted online");
+        return;
+      }
+    }
     setAssetLibrary(prev => prev.filter(a => a.name !== assetName));
     showToast("Asset deleted");
   };
 
-  const handleToggleEventRsvp = (eventId) => {
+  const handleToggleEventRsvp = async (eventId) => {
+    let event = eventList.find(ev => ev.id === eventId);
+    if (window.cyberlyxSupabase && currentUser?.authUserId && event) {
+      let nextAttending = !event.userAttending;
+      let { error } = nextAttending
+        ? await window.cyberlyxSupabase.from("event_rsvps").upsert({ event_id: eventId, user_id: currentUser.authUserId, attending: true })
+        : await window.cyberlyxSupabase.from("event_rsvps").delete().eq("event_id", eventId).eq("user_id", currentUser.authUserId);
+      if (error) {
+        showToast("RSVP could not be saved online");
+        return;
+      }
+    }
     setEventList(prev => prev.map(ev => {
       if (ev.id === eventId) {
         let isAtt = !ev.userAttending;
@@ -1738,7 +1815,7 @@ function ji() {
                                     d("label", {
                                       className: "flex items-center gap-2.5 cursor-pointer flex-1 min-w-0 pr-2",
                                       children: [
-                                        i("input", { type: "checkbox", checked: c.done, onChange: (y) => setTasks(T => T.map(Oe => Oe.id === c.id ? { ...Oe, done: y.target.checked } : Oe)), className: "w-4 h-4 accent-[#00D4FF]" }),
+                                        i("input", { type: "checkbox", checked: c.done, onChange: (y) => updateMediaTaskStatus(c, y.target.checked), className: "w-4 h-4 accent-[#00D4FF]" }),
                                         i("span", { className: "text-[11px] md:text-[12px] truncate " + (c.done ? "line-through text-white/40" : "text-white/80"), children: c.label })
                                       ]
                                     }),
