@@ -327,6 +327,12 @@ function ji() {
   M.default.useEffect(() => { saveStored("j5_pledges", pledges); }, [pledges]);
   M.default.useEffect(() => { saveStored("j5_read_notifications", readNotificationIds); }, [readNotificationIds]);
 
+  const syncBurialSocietyRegistration = async () => {
+    if (!window.cyberlyxSupabase || !window.cyberlyxSupabase.auth) return null;
+    let { data, error } = await window.cyberlyxSupabase.rpc("sync_burial_society_registration");
+    return error ? null : data;
+  };
+
   M.default.useEffect(() => {
     if (!window.cyberlyxSupabase || !currentUser || (!["Software CIOS", "Archbishop Makururu"].includes(currentUser.username) && !isBurialSocietyStaff(currentUser))) return;
     let loadProjects = async () => {
@@ -385,7 +391,8 @@ function ji() {
           let { data: profiles } = await window.cyberlyxSupabase.from("members").select("*").eq("auth_user_id", user.id).limit(1);
           let profile = profiles?.[0];
           let branch = profile?.branch_id ? (branches.find(item => item.id === profile.branch_id)?.name || profile.branch_id) : (user.user_metadata?.branch || "MVUMA HQ");
-          setMemberProfile({ photoUrl: profile?.photo_url || "", familyMembers: profile?.family_members || [], burialSocietyRegistered: !!profile?.burial_society_registered, burialSocietyPackage: profile?.burial_society_package || "" });
+          let syncResult = await syncBurialSocietyRegistration();
+          setMemberProfile({ photoUrl: profile?.photo_url || "", familyMembers: profile?.family_members || [], burialSocietyRegistered: !!profile?.burial_society_registered || !!syncResult?.registered, burialSocietyPackage: profile?.burial_society_package || "" });
           setCurrentUser({ authUserId: user.id, username: profile?.full_name || user.user_metadata?.full_name || email.split("@")[0], role: "Member", branch, memberId: profile?.member_code || "J5-MEM-" + user.id.slice(0, 8).toUpperCase(), phone: profile?.phone || user.user_metadata?.phone || "", email, tithe: profile?.tithe_pledge || "$0", joined: profile?.joined_date || "" });
           setIsLoggedIn(true);
           setActiveTab("member-portal");
@@ -870,7 +877,8 @@ function ji() {
               let memberName = profile ? (profile.full_name || profile.name) : (authData.user.user_metadata?.full_name || query.split("@")[0]);
               let memberBranch = profile?.branch_id ? (branches.find(b => b.id === profile.branch_id)?.name || profile.branch_id) : (profile?.branch || authData.user.user_metadata?.branch || "MVUMA HQ");
               let memberId = profile ? (profile.member_code || profile.id) : (authData.user.user_metadata?.member_code || "J5-MEM-" + authData.user.id.slice(0, 8).toUpperCase());
-              setMemberProfile({ photoUrl: profile?.photo_url || "", familyMembers: profile?.family_members || [], burialSocietyRegistered: !!profile?.burial_society_registered, burialSocietyPackage: profile?.burial_society_package || "" });
+              let syncResult = await syncBurialSocietyRegistration();
+              setMemberProfile({ photoUrl: profile?.photo_url || "", familyMembers: profile?.family_members || [], burialSocietyRegistered: !!profile?.burial_society_registered || !!syncResult?.registered, burialSocietyPackage: profile?.burial_society_package || "" });
               setIsLoggedIn(true);
               setCurrentUser({ authUserId: authData.user.id, username: memberName, role: "Member", branch: memberBranch, memberId, phone: profile?.phone || authData.user.user_metadata?.phone || "", email: authData.user.email, tithe: profile?.tithe_pledge || profile?.tithe || "$0", joined: profile?.joined_date || profile?.joined || new Date().toISOString().slice(0, 10) });
               setActiveTab("member-portal");
@@ -924,6 +932,8 @@ function ji() {
             setAuthError("Account created. Check your email to confirm your account, then sign in.");
             return;
           }
+          let syncResult = await syncBurialSocietyRegistration();
+          setMemberProfile(profile => ({ ...profile, burialSocietyRegistered: !!syncResult?.registered }));
           setIsLoggedIn(true);
           setCurrentUser({ authUserId: signUpData.user.id, username: signUpName.trim(), role: "Member", branch: signUpBranch, memberId: signUpData.user.id.slice(0, 8).toUpperCase(), phone: signUpPhone.trim(), email: signUpData.user.email, tithe: "$0", joined: new Date().toISOString().slice(0, 10) });
           setActiveTab("member-portal");

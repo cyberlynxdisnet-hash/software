@@ -1,0 +1,134 @@
+BULAWAYO PROVINCE
+No. Name Surname Phone Amount
+1 Ciswell Matore 0713 133 354 $6.00
+2 Stanford Molebe 0168 011 226 $6.00
+3 Janet Nhamalo 0711 921 861 $6.00
+4 France Dube 0711 021 416 $6.00
+5 Marvelous Moyo 0718 368 397 $6.00
+6 Emelly Moyo 0713 960 465 $6.00
+7 Esnath Moyo 0710 115 206 $10.00
+8 Trandline Phiri 0769 271 841 $10.00
+9 Nothando Shumba 0719 911 441 $6.00
+10 Chengei Sibanda 0715 933 196 $6.00
+11 Miriam Moyo 0715 442 40 $6.00
+12 Hopewell Hove 0715 521 9401 $12.00
+13 Timmy — 0719 513 24 —
+13 Dumisani Sibanda 0741 418 610 $6.00
+14 Senzeni Nyoni 0718 912 448 $10.00
+15 Aurilicia Ndlovu 0713 284 811 $12.00
+16 Abigail Masina 0712 215 614 $6.00
+17 Kelvin Sibanda 0760 5024 31 $6.00
+18 Saimore Zimi 0760 034 113 $6.00
+19 Andile Sibanda 0718 835 814 $6.00
+20 Holly Hunierega 0764 702 134 $10.00
+21 Blessing Ndhlukula 0713 730 816 $6.00
+22 Velani Sibanda 071 022 5162 $6.00
+23 Ntombi Moyo 0718 391 369 $6.00
+24 Cecion Ndlovu 0714 461 217 $6.00
+25 Christopher Shongwe 0710 272 684 $6.00
+
+-- 1 of 5 --
+
+No. Name Surname Phone Amount
+26 Sheila Nkala 0715 114 804 $10.00
+27 Netsai Mabhunu? 0713 553 890 $14.00
+28 Deliwe Ncube 0714 641 526 $6.00
+29 Ruvareche Mucumbe 0711 603 181 $6.00
+30 Ntombi Nyathi 0710 241 0001 $10.00
+31 Hpros Nkala 0719 333 180 $12.00
+32 Eelson Moyo 0718 516 431 $6.00
+33 Angelinah Nyoni 0713 784 695 $6.00
+34 Theresa Sibanda 0716 562 376 $6.00
+35 Khululeku? Ncube 0714 786 255 $6.00
+36 Faith Sibanda 0711 900 833 $6.00
+37 Reason Musupi 0712 151 626 $6.00
+38 Cynthia Moyo 0710 155 626 $6.00
+39 Violet Tshuma 0715 917 385 $6.00
+40 Dorcas Moyo 0713 534 664 $12.00
+41 Gladys Chiweshe 0715 182 647 $12.00
+42 Sipiso Mashuhume 0714 481 468 $12.00
+43 Sithandekile Tshuma 0711 841 322 $12.00
+44 Stanford Ngwenya 0712 830 303 $6.00
+45 Sithembiso Ndlovu 0716 241 683 $10.00
+46 Shantel Gweshe? 0715 594 462 $12.00
+47 Mkhululi Npofu 0712 164 329 $6.00
+48 Dumisile Ncube 0716 016 493 $6.00
+49 Memory Mathe 0714 320 314 $6.00
+50 Meslinda Lewis 0712 523 725 $12.00
+51 Elizabeth Chinyama 0714 913 264 $6.00
+52 Kudzirwa? Hunter 0713 801 26 $6.00
+53 Evelyn Tiero 0718 739 232 —
+
+-- 2 of 5 --
+
+No. Name Surname Phone Amount
+54 Nelly Mpofu 0711 311 153 $6.00
+55 Nothando Sibanda 0713 873 253 $6.00
+56 Lilothi Ndlovu — —
+57 Mlcvel Dube — $12.00
+58 Marnce Nyandoro — $12.00
+59 Beauty Sibanda — $14.00
+60 Nyina Faw…? — $16.00
+61 Tsabiso Bayla — $6.00
+62 Celsipe Sibanda — $20.00
+63 Eve Maza — $6.00
+64 Mp… Mpofu — $6.00
+65 Lind… Sibanda — $10.00
+66 L… Ncube — $6.00
+67 Sisel… Ncube — $36.00
+68 Virginia … — $6.00
+69 Dorcas Sibanda — $6.00
+70 Alfa Nkomo — $12.00
+71 Sebekeile Ncube — $14.00
+72 Tamara Nkala — $12.00
+73 Grace Mpofu — $8.00
+74 Tsabiso Bayla — $10.00
+75 Florence Ncube — $6.00
+76 Sithembile Sibanda — $6.00
+77 Dumisile Ncube — $18.00
+78 Celyan Sibanda — $12.00
+79 Mabie Phoko — $12.00
+80 Ntombenhle Nyathi — $10.00
+81 Desire Rumb… — $12.00
+
+-- 3 of 5 --
+
+No. Name Surname Phone Amount
+82 Petronella Rusinwi — $12.00
+83 Nobukhosi Ncube — $12.00
+84 Nomsa Nkala — $12.00
+85 Alfa Nkomo — $12.00
+86 Jolanda Nkala — $5.00
+87 Kalibari Moyo — $7.00
+88 Liloth Ndlovu — $6.00
+89 Keswe Zulu — $3.00
+90 Linneth Mpofu — $9.00
+91 Steezekile Ncube — $9.00
+92 Sithembiso Sibanda — $3.00
+93 Sh…rose Ngwenya — $3.00
+94 Evelyn Sibanda — $9.00
+95 Sipiso Sibanda — $3.00
+96 Menchulo Ndlovu — $3.00
+97 Nobuhle Sibanda — $6.00
+98 Stanford Ngwenya — $3.00
+99 Nobukhosi Ncube — $3.00
+100 Reason Musupi — $6.00
+101 France Dube — $3.00
+102 Dorcas Moyo — $3.00
+103 Mable Phoko — $15.00
+104 Esnath Moyo — $6.00
+105 Kelvin Dube — $6.00
+106 Kelvin Ngwenya — $6.00
+107 Evelyn Moyo — $3.00
+108 Hlabezisile Ndlovu — $3.00
+108 Ayanda? Sibanda — $6.00
+
+-- 4 of 5 --
+
+No. Name Surname Phone Amount
+109 Simbore… Sithole — $3.00
+110 Senzeni Nyoni — $3.00
+Transcribed from the supplied handwritten pages. Entries that were not clearly legible are marked with “?” or “…” rather than being presented as certain.
+
+-- 5 of 5 --
+

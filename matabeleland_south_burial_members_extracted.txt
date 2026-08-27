@@ -1,0 +1,104 @@
+MATABELELAND SOUTH
+No. Name Surname Phone Amount
+1 Leonard Ndlovando 0711 979 612 $6.00
+2 Precious Mamb… 0713 32 52 $6.00
+3 Emmanuel Ncube 0713 043 38 $6.00
+4 Patience Chipan… 0714 151516 $6.00
+5 Charles Mufundiru? 0717 574 841 $12.00
+6 Priscilla T… 0714 308 551 $6.00
+7 Rutendo B… 0718 715 105 $20.00
+8 Elizabeth Mash… 0718 609 346 $6.00
+9 Sipellile Ndlovu 0714 433 311 $6.00
+10 Portia Ndlovu 0718 440 400 $6.00
+11 Percy Dube 0710 746 54 $6.00
+12 Primrose Mhond… 0716 808 183 $8.00
+13 Calvin Ndlovu 0716 152 531 $6.00
+14 Charles Chibaya 0716 43 8893 $12.00
+15 Stella Shon… 0716 86 1104 $6.00
+16 Lewis Mapfoche 0711 540 654 $12.00
+17 Shulet Mpofu 0713 56 10 $6.00
+18 Petty Mah… 0714 546 62 $21.00
+19 Enia Mutero 0716 13 242 $12.00
+20 Stembile Mamvura 0713 240 8214 $12.00
+21 Dube Nozibelo 0712 453 59 $12.00
+22 Asphalt Mpangeri 0718 619 12 $16.00
+23 Betty Nyoni 0713 121 99 $12.00
+
+-- 1 of 4 --
+
+No. Name Surname Phone Amount
+24 Tawand… Masunda 0713 98 54 $6.00
+25 Suradzei Muketwa 0748 247 36 $14.00
+26 Avril Baloyi 0745 93 118 —
+27 Donari Nc Dube 0783 304 390 $18.00
+28 Perseverance Kupuseyi 0713 194 401 $16.00
+29 Wilson Matumwa 0711 141 832 $6.00
+30 Raymond Moyo 0718 2432 10 $6.00
+31 Monica Tangy… 0714 304 663 $6.00
+32 Mary… Mandishona 0715 930 693 $12.00
+33 Agnes Gavera 0786 256 82 $6.00
+34 Tendai Ndlovu 0783 744 31 $6.00
+35 … Honde M 0784 315 830 $6.00
+36 Abel C Chigande 0784 807 05 $6.00
+37 Howait Lawrence 0785 471 581 $6.00
+38 Maesop Moyo 0789 484 16 $6.00
+39 Florence Sibanda 0717 842 95 $12.00
+40 Joseph Chituke 0716 491 16 $12.00
+41 Abigail Masire 0714 334 269 $6.00
+42 Norik… Sibanda 0715 928 744 $12.00
+43 Bek… / Admire Ncube 0781 761 04 $6.00
+44 Rhoda Mudhimba 0719 194 482 $12.00
+45 Bruce Nyoni 0716 50 4661 $6.00
+46 Belhere Chipenyu 0713 324 00 $6.00
+47 Bongani Nd… 0784 544 54 $12.00
+48 Sipwe Map… 0719 82 4451 $6.00
+
+-- 2 of 4 --
+
+No. Name Surname Phone Amount
+49 Senzeni Zender… 0781 305 014 $6.00
+50 Flora Muteya 0715 26 4404 $12.00
+51 Thivh… Sibanda 0715 44 0510 $14.00
+52 Andrew Kar… 0715 595 417 $6.00
+53 Mure… Moyo 0714 889 947 $6.00
+54 Clarity Paton 0785 706 13 $6.00
+55 Alleta Jona 0716 783 562 $6.00
+56 Ian Mutong… ? $6.00
+57 Joyce Mutongi 0719 845 558 $6.00
+58 Tsakani Mhlazi 0716 231 76 $6.00
+59 N… Moyo 0717 694 240 $6.00
+60 Thembile Nyathi 0718 182 35 ?
+61 Sentwe M… 0719 625 212 $6.00
+62 Fatuma Phiri 0711 011 651 $12.00
+63 Claver Ndlovu 0711 164 100 $6.00
+64 Lancelot Mup… 0716 241 264 $6.00
+65 Keneto Moyo 0718 684 292 $6.00
+66 Emmanuel Chaka… 0714 100 49 $6.00
+67 Leon… Ndrami 0786 922 405 $6.00
+68 Noddy Marara 0786 267 19 $6.00
+69 Sithol… Mkomenzi 0716 533 028 $6.00
+70 … Meki 0718 546 443 —
+71 Tanyaradzwa Meki 0715 221 841 $6.00
+72 Teresa Nyamhang… 0714 541 92 $6.00
+73 Agnes Mkwananzi ? $6.00
+
+-- 3 of 4 --
+
+No. Name Surname Phone Amount
+74 Blessing Nyoka ? $12.00
+75 Brian Muleya ? $10.00
+76 P… Nyoni ? $16.00
+77 Petr… Mudh… ? $12.00
+78 Vincent Madende ? $18.00
+79 Catherine Mlagembo ? $16.00
+80 Tendai Si… ? $16.00
+81 Crescenk Mathe ? $18.00
+82 Mavis Bhebhe ? $6.00
+83 Bright Ncube ? $6.00
+84 Agnes Nkw… ? $6.00
+85 Sophie Ncube ? $6.00
+86 Solomon Dlomo ? $6.00
+Note: Unclear handwriting is recorded with ? or partial text rather than guessed.
+
+-- 4 of 4 --
+

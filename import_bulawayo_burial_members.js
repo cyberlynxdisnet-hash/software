@@ -1,8 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const inputPath = process.argv[2] || 'mashonaland_west_burial_members_extracted.txt';
-const outputPath = process.argv[3] || 'supabase_mashonaland_west_burial_members.sql';
+const inputPath = process.argv[2] || 'bulawayo_province_burial_members_extracted.txt';
+const outputPath = process.argv[3] || 'supabase_bulawayo_province_burial_members.sql';
 const text = fs.readFileSync(inputPath, 'utf8');
 const rows = [];
 const occurrences = new Map();
@@ -30,11 +30,11 @@ for (const line of text.split(/\r?\n/)) {
   const occurrence = (occurrences.get(sourceNumber) || 0) + 1;
   occurrences.set(sourceNumber, occurrence);
   const suffix = occurrence === 1 ? '' : `-${occurrence}`;
-  rows.push({ id: `mashwest-burial-${String(sourceNumber).padStart(3, '0')}${suffix}`, sourceNumber, name, phone, amount });
+  rows.push({ id: `bulawayo-burial-${String(sourceNumber).padStart(3, '0')}${suffix}`, sourceNumber, name, phone, amount });
 }
 
 const values = rows.map(row => `  (${sql(row.id)}, ${row.sourceNumber}, ${sql(row.name)}, ${sql(row.phone)}, ${sql(row.amount)}, false, null, null, ${sql(path.basename(inputPath))})`).join(',\n');
-const output = `-- Imported from Mashonaland_West_Burial_Society_Text_Records.pdf.\n-- Unclear names and phone numbers are preserved as marked or blank.\n-- Duplicate source numbers are retained with suffixed IDs.\n-- Uses the shared protected Burial Society registry table.\n\ninsert into public.burial_society_member_registry\n  (id, source_number, full_name, phone, amount_paid, linked, linked_member_id, linked_auth_user_id, source)\nvalues\n${values}\non conflict (id) do update set\n  source_number = excluded.source_number,\n  full_name = excluded.full_name,\n  phone = excluded.phone,\n  amount_paid = excluded.amount_paid,\n  source = excluded.source,\n  updated_at = now();\n`;
+const output = `-- Imported from bulawayo%20province.pdf.\n-- Unclear names, phone numbers, and amounts are preserved as marked or blank.\n-- Duplicate source numbers are retained with suffixed IDs.\n-- Uses the shared protected Burial Society registry table.\n\ninsert into public.burial_society_member_registry\n  (id, source_number, full_name, phone, amount_paid, linked, linked_member_id, linked_auth_user_id, source)\nvalues\n${values}\non conflict (id) do update set\n  source_number = excluded.source_number,\n  full_name = excluded.full_name,\n  phone = excluded.phone,\n  amount_paid = excluded.amount_paid,\n  source = excluded.source,\n  updated_at = now();\n`;
 fs.writeFileSync(outputPath, output, 'utf8');
 console.log(`Records imported: ${rows.length}`);
 console.log(`Duplicate source numbers retained: ${[...occurrences.values()].filter(count => count > 1).length}`);

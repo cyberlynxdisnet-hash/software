@@ -1,0 +1,13 @@
+HARARE PROVINCE
+No. Name Surname Phone Fee
+1 Tendai Mapanzure 0713 134 184 12-00
+2 Chipo Herema 0719 409 636 12-00
+3 Sarah Chimunhu 0718 807 745 6-00
+4 Curudzai Simb… 0716 340 512 6-00
+5 Barbara Katura 0717 756 781 6-00
+6 Weston Matemba — —
+Note: The surname for No. 4 is difficult to read clearly from the handwritten source and is recorded as “Simb…”
+rather than guessed.
+
+-- 1 of 1 --
+
