@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>J5 Event SMS</title>
+    <style>
+      :root {
+        --bg: #020617;
+        --panel: #0f172a;
+        --panel-2: #111827;
+        --line: rgba(255,255,255,0.1);
+        --text: #e5e7eb;
+        --muted: #94a3b8;
+        --accent: #00d4ff;
+        --accent-2: #fbbf24;
+        --success: #34d399;
+        --danger: #f87171;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Arial, sans-serif;
+        background: linear-gradient(135deg, #020617, #0b1120 55%, #111827);
+        color: var(--text);
+        display: grid;
+        place-items: center;
+        padding: 24px;
+      }
+      .card {
+        width: min(760px, 100%);
+        background: rgba(15, 23, 42, 0.94);
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        padding: 24px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 32px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .sub {
+        margin: 0 0 20px;
+        color: var(--muted);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+      }
+      label {
+        display: block;
+        font-size: 12px;
+        color: var(--muted);
+        margin-bottom: 8px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      input, select, textarea, button {
+        width: 100%;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        background: rgba(15, 23, 42, 0.8);
+        color: var(--text);
+        padding: 12px 14px;
+        font-size: 14px;
+      }
+      textarea {
+        min-height: 150px;
+        resize: vertical;
+      }
+      button {
+        cursor: pointer;
+        background: linear-gradient(135deg, var(--accent), #38bdf8);
+        color: #02121a;
+        border: none;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .status {
+        margin-top: 16px;
+        border: 1px solid var(--line);
+        background: rgba(255,255,255,0.02);
+        padding: 12px 14px;
+        border-radius: 12px;
+        color: var(--text);
+      }
+      .status.success { border-color: rgba(52,211,153,0.5); color: var(--success); }
+      .status.error { border-color: rgba(248,113,113,0.5); color: var(--danger); }
+      @media (max-width: 640px) {
+        .grid { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>J5 Event SMS</h1>
+      <p class="sub">Send event reminders with the event name included.</p>
+
+      <div class="grid">
+        <div>
+          <label for="eventSelect">Event</label>
+          <select id="eventSelect"></select>
+        </div>
+        <div>
+          <label for="phoneInput">Phone Number</label>
+          <input id="phoneInput" type="tel" placeholder="+263771234567" />
+        </div>
+      </div>
+
+      <div style="margin-top: 16px;">
+        <label for="messageInput">Message Preview</label>
+        <textarea id="messageInput"></textarea>
+      </div>
+
+      <div style="margin-top: 16px;">
+        <button id="sendBtn" type="button">Send SMS</button>
+      </div>
+
+      <div id="status" class="status" aria-live="polite">Ready to send an event SMS.</div>
+    </div>
+
+    <script>
+      const events = [
+        { id: 'e1', name: 'Grand Sunday Prophecy Service', date: 'Sunday 10:00 AM', location: 'MVUMA HQ Sanctum' },
+        { id: 'e2', name: 'Midweek Deliverance & Breakthrough', date: 'Wednesday 5:30 PM', location: 'All Branch Sanctuary Nodes' },
+        { id: 'e3', name: 'J5 Youth Anointing Crusade', date: 'Saturday 2:00 PM', location: 'Harare CBD Sanctuary' },
+        { id: 'e4', name: 'Regional Prophets & Leaders Summit', date: 'Friday 9:00 AM', location: 'Johannesburg SA Region' }
+      ];
+
+      const eventSelect = document.getElementById('eventSelect');
+      const phoneInput = document.getElementById('phoneInput');
+      const messageInput = document.getElementById('messageInput');
+      const sendBtn = document.getElementById('sendBtn');
+      const statusBox = document.getElementById('status');
+
+      function updatePreview() {
+        const selectedEvent = events.find((event) => event.id === eventSelect.value) || events[0];
+        const preview = `You are invited to ${selectedEvent.name} on ${selectedEvent.date} at ${selectedEvent.location}. We look forward to worshipping with you.`;
+        messageInput.value = preview;
+      }
+
+      events.forEach((event) => {
+        const option = document.createElement('option');
+        option.value = event.id;
+        option.textContent = `${event.name} • ${event.date}`;
+        eventSelect.appendChild(option);
+      });
+
+      eventSelect.addEventListener('change', updatePreview);
+      updatePreview();
+
+      sendBtn.addEventListener('click', async () => {
+        const phone = phoneInput.value.trim();
+        const selectedEvent = events.find((event) => event.id === eventSelect.value) || events[0];
+        const message = messageInput.value.trim();
+
+        if (!phone) {
+          statusBox.textContent = 'Please enter a phone number before sending.';
+          statusBox.className = 'status error';
+          return;
+        }
+
+        statusBox.textContent = 'Sending message...';
+        statusBox.className = 'status';
+
+        try {
+          const response = await fetch('/api/send-event-sms', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              phone,
+              eventId: selectedEvent.id,
+              eventName: selectedEvent.name,
+              eventDate: selectedEvent.date,
+              eventLocation: selectedEvent.location,
+              message
+            })
+          });
+
+          const data = await response.json();
+
+          if (!response.ok || !data.ok) {
+            throw new Error(data.error || 'SMS send failed.');
+          }
+
+          statusBox.textContent = data.demoMode
+            ? `Demo mode: message prepared for ${phone}. Add Twilio credentials to send for real.`
+            : `SMS sent successfully to ${phone}.`;
+          statusBox.className = 'status success';
+        } catch (error) {
+          statusBox.textContent = error.message || 'Failed to send message.';
+          statusBox.className = 'status error';
+        }
+      });
+    </script>
+  </body>
+</html>
