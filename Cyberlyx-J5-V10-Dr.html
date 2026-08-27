@@ -652,7 +652,16 @@ function ji() {
   let assignedBranchEvents = currentUser && eventList.filter(event => !event.branch || event.branch === "All Branches" || event.branch === currentUser.branch || event.branch === assignedBranch?.id);
   let pledgeOwnerKey = currentUser && (currentUser.authUserId || currentUser.memberId || currentUser.email || currentUser.username);
   let visiblePledges = isAdminUser ? pledges : pledges.filter(pledge => pledge.owner_key === pledgeOwnerKey || (pledge.auth_user_id && pledge.auth_user_id === currentUser?.authUserId));
-  let burialSocietyMembers = arkMembers.map(member => {
+  let burialSocietyMembers = burialRegistry.length ? burialRegistry.map(record => ({
+    id: record.id,
+    name: record.full_name || "Name unclear",
+    phone: record.phone || "",
+    branch: "Burial Society Register",
+    email: "",
+    burialSocietyRegistered: true,
+    burialSocietyPackage: "",
+    registryLinked: !!record.linked
+  })) : arkMembers.map(member => {
     let savedProfile = getStored("j5_member_profile_" + (member.id || member.email || member.name), {});
     return { ...member, burialSocietyRegistered: member.burialSocietyRegistered || !!savedProfile.burialSocietyRegistered, burialSocietyPackage: member.burialSocietyPackage || savedProfile.burialSocietyPackage || "" };
   }).filter(member => member.burialSocietyRegistered);
@@ -3266,8 +3275,8 @@ function ji() {
               ] }),
               d("div", { className: "rounded-[20px] bg-[#00D4FF]/5 border border-[#00D4FF]/20 p-5 md:p-6", children: [
                 d("div", { className: "flex items-center justify-between gap-3 flex-wrap", children: [i("h3", { className: "font-bold tracking-widest text-[12px] text-[#00D4FF]", children: "PRELOADED BURIAL SOCIETY REGISTER" }), i("span", { className: "text-[10px] text-white/40", children: burialRegistry.length + " RECORDS" })] }),
-                i("p", { className: "mt-2 text-[11px] text-white/50", children: "Imported records remain pending until a member creates an account and is matched by verified details." }),
-                burialRegistry.length ? d("div", { className: "mt-4 grid md:grid-cols-2 xl:grid-cols-4 gap-2 max-h-80 overflow-auto", children: burialRegistry.map(record => d("div", { key: record.id, className: "rounded-lg bg-black/30 border border-white/10 p-3", children: [i("div", { className: "text-[9px] text-white/40", children: "REGISTER #" + record.source_number }), i("div", { className: "mt-1 text-[11px] font-bold", children: record.full_name || "Name unclear" }), i("div", { className: "mt-1 text-[10px] text-[#00D4FF]", children: record.phone || "Phone unclear" }), i("div", { className: "mt-1 text-[9px] text-amber-300", children: record.linked ? "LINKED" : "PENDING REGISTRATION" })] })) }) : i("div", { className: "mt-4 rounded-xl border border-dashed border-white/15 p-6 text-center text-[11px] text-white/45", children: currentUser?.authUserId === "demo-local-user" ? "Demo mode is active. Sign in online with a Supabase manager account to load the private registry." : "No registry records loaded. Confirm the Masvingo Burial Society SQL has been run in Supabase, then refresh." })
+                i("p", { className: "mt-2 text-[11px] text-white/50", children: "Imported records are registered members. Account linkage appears separately when a verified member account is matched." }),
+                burialRegistry.length ? d("div", { className: "mt-4 grid md:grid-cols-2 xl:grid-cols-4 gap-2 max-h-80 overflow-auto", children: burialRegistry.map(record => d("div", { key: record.id, className: "rounded-lg bg-black/30 border border-white/10 p-3", children: [i("div", { className: "text-[9px] text-white/40", children: "REGISTER #" + record.source_number }), i("div", { className: "mt-1 text-[11px] font-bold", children: record.full_name || "Name unclear" }), i("div", { className: "mt-1 text-[10px] text-[#00D4FF]", children: record.phone || "Phone unclear" }), i("div", { className: "mt-1 text-[9px] text-emerald-300", children: record.linked ? "ACCOUNT LINKED" : "REGISTERED" })] })) }) : i("div", { className: "mt-4 rounded-xl border border-dashed border-white/15 p-6 text-center text-[11px] text-white/45", children: currentUser?.authUserId === "demo-local-user" ? "Demo mode is active. Sign in online with a Supabase manager account to load the private registry." : "No registry records loaded. Confirm the Burial Society SQL has been run in Supabase, then refresh." })
               ] }),
               d("div", { className: "rounded-[20px] bg-white/[0.05] border border-white/10 p-5 md:p-6", children: [
               d("div", { className: "rounded-[20px] bg-[#00D4FF]/5 border border-[#00D4FF]/20 p-5 md:p-6", children: [
