@@ -626,6 +626,10 @@ function ji() {
   let assignedBranchEvents = currentUser && eventList.filter(event => !event.branch || event.branch === "All Branches" || event.branch === currentUser.branch || event.branch === assignedBranch?.id);
   let pledgeOwnerKey = currentUser && (currentUser.authUserId || currentUser.memberId || currentUser.email || currentUser.username);
   let visiblePledges = isAdminUser ? pledges : pledges.filter(pledge => pledge.owner_key === pledgeOwnerKey || (pledge.auth_user_id && pledge.auth_user_id === currentUser?.authUserId));
+  let burialSocietyMembers = arkMembers.map(member => {
+    let savedProfile = getStored("j5_member_profile_" + (member.id || member.email || member.name), {});
+    return { ...member, burialSocietyRegistered: !!savedProfile.burialSocietyRegistered, burialSocietyPackage: savedProfile.burialSocietyPackage || "" };
+  }).filter(member => member.burialSocietyRegistered);
     let notificationItems = currentUser ? portalFeedback.filter(item => isAdminUser ? (item.status || "New") === "New" : item.submitted_by === currentUser.username && item.admin_reply) : [];
     let unreadNotifications = notificationItems.filter(item => !readNotificationIds.includes(item.id));
   let positionPortalConfig = {
@@ -684,6 +688,7 @@ function ji() {
       { k: "pulpit", label: "Pulpit Live", icon: Ut },
       { k: "ark", label: "Ark Members", icon: jn },
       { k: "events", label: "Events Calendar", icon: Wr },
+      { k: "burial-members", label: "The Burial SOCIETY MEMBERS", icon: jn },
       { k: "shield", label: "J5 System Protection and anti hacking", icon: Vt },
       { k: "prophet", label: "Prophet & Prophetess Portal", icon: xn }
     ];
@@ -3196,6 +3201,35 @@ function ji() {
           }),
 
           // SHIELD TAB (Staff only)
+          isAdminUser && activeTab === "burial-members" && d("div", {
+            className: "space-y-6",
+            children: [
+              d("div", { className: "rounded-[24px] border border-amber-300/30 bg-gradient-to-br from-amber-500/15 via-[#020617] to-[#00D4FF]/10 p-6 md:p-8", children: [
+                i("div", { className: "text-[10px] tracking-[0.22em] text-amber-300 font-bold", children: "J5 MEMBER CARE REGISTER" }),
+                i("h2", { className: "mt-2 text-[24px] md:text-[32px] font-black tracking-wide", children: "The Burial SOCIETY MEMBERS" }),
+                i("p", { className: "mt-3 max-w-3xl text-[12px] text-white/60", children: "Review members who have registered through their private member profile, including their selected package and home branch." }),
+                d("div", { className: "mt-6 grid sm:grid-cols-3 gap-3", children: [
+                  { label: "REGISTERED MEMBERS", value: burialSocietyMembers.length, color: "text-amber-300" },
+                  { label: "BASIC PACKAGE", value: burialSocietyMembers.filter(member => member.burialSocietyPackage.indexOf("Basic") === 0).length, color: "text-[#00D4FF]" },
+                  { label: "PREMIUM PACKAGE", value: burialSocietyMembers.filter(member => member.burialSocietyPackage.indexOf("Premium") === 0).length, color: "text-emerald-300" }
+                ].map(stat => d("div", { key: stat.label, className: "rounded-xl bg-black/30 border border-white/10 p-4", children: [i("div", { className: "text-[9px] tracking-widest text-white/40", children: stat.label }), i("div", { className: "mt-2 font-black text-[18px] " + stat.color, children: stat.value })] })) })
+              ] }),
+              d("div", { className: "rounded-[20px] bg-white/[0.05] border border-white/10 p-5 md:p-6", children: [
+                d("div", { className: "flex items-center justify-between gap-3 flex-wrap", children: [i("h3", { className: "font-bold tracking-widest text-[12px] text-amber-300", children: "REGISTERED SOCIETY MEMBERS" }), i("span", { className: "text-[10px] text-white/40", children: burialSocietyMembers.length + " RECORDS" })] }),
+                burialSocietyMembers.length ? d("div", { className: "mt-4 grid md:grid-cols-2 xl:grid-cols-3 gap-3", children: burialSocietyMembers.map(member => d("div", { key: member.id, className: "rounded-xl bg-black/30 border border-white/10 p-4", children: [
+                  d("div", { className: "flex items-start justify-between gap-3", children: [i("div", { className: "font-bold text-[12px]", children: member.name }), i("span", { className: "text-[9px] text-emerald-300", children: "REGISTERED" })] }),
+                  i("div", { className: "mt-2 text-[10px] text-[#00D4FF]", children: member.burialSocietyPackage || "Package pending" }),
+                  i("div", { className: "mt-2 text-[10px] text-white/50", children: [member.branch, " • ", member.phone || "No phone recorded"] }),
+                  i("div", { className: "mt-1 text-[10px] text-white/40", children: member.email || "No email recorded" })
+                ] })) }) : i("div", { className: "mt-4 rounded-xl border border-dashed border-white/15 bg-black/20 p-8 text-center text-[11px] text-white/45", children: "No members have registered with the burial society yet. Members can complete registration from their Member Portal." })
+              ] }),
+              d("div", { className: "rounded-[20px] bg-amber-500/[0.06] border border-amber-300/20 p-5 md:p-6", children: [
+                i("h3", { className: "font-bold tracking-widest text-[12px] text-amber-300", children: "REGISTRATION POLICY" }),
+                i("p", { className: "mt-2 text-[11px] leading-relaxed text-white/55", children: "Registration records are linked to each member's private profile. A member becomes active after the three-month waiting period stated in the enrollment form." })
+              ] })
+            ]
+          }),
+
           isAdminUser && activeTab === "legacy-shield" && d("div", {
             className: "grid lg:grid-cols-3 gap-4 md:gap-6",
             children: [
