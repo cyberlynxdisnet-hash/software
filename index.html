@@ -35,6 +35,21 @@
     opacity: 1 !important;
     filter: none !important;
   }
+  @keyframes archbishopWelcome {
+    0% { opacity: 0; transform: translateY(18px) scale(0.94); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes archbishopBalloon {
+    0% { transform: translateY(90px) rotate(-8deg); opacity: 0; }
+    15% { opacity: 1; }
+    100% { transform: translateY(-110vh) rotate(12deg); opacity: 0; }
+  }
+  .archbishop-welcome {
+    animation: archbishopWelcome 0.65s ease-out both !important;
+  }
+  .archbishop-balloon {
+    animation: archbishopBalloon 5s ease-in-out both !important;
+  }
 </style>
 <body>
   <div id="root"></div>
@@ -178,7 +193,7 @@ function ji() {
   let [broadcastingState, setBroadcastingState] = M.useState("");
 
   let [staffList, setStaffList] = M.useState(() => getStored("j5_staff", J1).map(staff => ({ ...staff, password: "" })));
-  let [newStaffForm, setNewStaffForm] = M.useState({ username: "", password: "", role: "Media Team", branch: "MVUMA HQ" });
+  let [newStaffForm, setNewStaffForm] = M.useState({ username: "", password: "", role: "Media Team", position: "", branch: "MVUMA HQ" });
   let [staffPasswordDrafts, setStaffPasswordDrafts] = M.useState({});
   let [positions, setPositions] = M.useState(() => getStored("j5_positions", [
     "Chairladies", "Senate", "Elders", "Chairmen", "Security Guards", "Drivers", "Chief Security Officer", "Team Leaders", "Accounting Department", "Administrators", "Software Engineers", "Praise and Worship", "Mother Advisor"
@@ -225,6 +240,7 @@ function ji() {
   let [isSanctumUnlocked, setIsSanctumUnlocked] = M.useState(false);
   let [isSanctumLoading, setIsSanctumLoading] = M.useState(false);
   let [toastMessage, setToastMessage] = M.useState("");
+  let [showArchbishopWelcome, setShowArchbishopWelcome] = M.useState(false);
 
   M.default.useEffect(() => { saveStored("j5_branches", branches); }, [branches]);
   M.default.useEffect(() => { saveStored("j5_staff", staffList); }, [staffList]);
@@ -251,6 +267,10 @@ function ji() {
           setCurrentUser({ authUserId: user.id, username: isArchbishop ? "Archbishop Makururu" : "Software CIOS", email, role: isArchbishop ? "Archbishop" : "Prophet", branch: "MVUMA HQ", perms: ["all"] });
           setIsLoggedIn(true);
           setActiveTab("overview");
+          if (isArchbishop) {
+            setShowArchbishopWelcome(true);
+            setTimeout(() => setShowArchbishopWelcome(false), 5500);
+          }
         } else {
           let { data: profiles } = await window.cyberlyxSupabase.from("members").select("*").eq("auth_user_id", user.id).limit(1);
           let profile = profiles?.[0];
@@ -267,7 +287,7 @@ function ji() {
   }, []);
 
   M.default.useEffect(() => {
-    if (!window.cyberlyxSupabase || !currentUser || currentUser.role === "Member") return;
+    if (!window.cyberlyxSupabase || !currentUser) return;
     let channel;
     let loadBranches = async () => {
       let { data } = await window.cyberlyxSupabase.from("branches").select("*").order("created_at", { ascending: true });
@@ -303,7 +323,7 @@ function ji() {
   }, [currentUser]);
 
   M.default.useEffect(() => {
-    if (!window.cyberlyxSupabase || !currentUser || currentUser.role === "Member") return;
+    if (!window.cyberlyxSupabase || !currentUser) return;
     let channels = [];
     let isMemberSession = currentUser.role === "Member";
     let sharedTables = isMemberSession ? ["events"] : ["events", "media_assets", "media_tasks"];
@@ -464,8 +484,11 @@ function ji() {
   let isMember = currentUser && currentUser.role === "Member";
   let isMediaTeam = currentUser && (currentUser.role === "Media Team" || (currentUser.perms && currentUser.perms.includes("media") && !currentUser.perms.includes("all") && !currentUser.perms.includes("branches")));
   let isAdminUser = currentUser && ["Software CIOS", "Archbishop Makururu"].includes(currentUser.username);
+  let isProphetUser = currentUser && !isMember && !isMediaTeam && !isAdminUser && ["Prophet", "Prophetess", "Prophet / Prophetess"].includes(currentUser.role);
   let assignedPosition = currentUser && positions.find(position => position.assignedTo === currentUser.username);
-  let isPositionUser = currentUser && !isMember && !isMediaTeam && !isAdminUser;
+  let isPositionUser = currentUser && !isMember && !isMediaTeam && !isAdminUser && !isProphetUser;
+  let assignedBranch = currentUser && branches.find(branch => branch.name === currentUser.branch);
+  let assignedBranchMembers = currentUser && arkMembers.filter(member => member.branch === currentUser.branch);
   let positionPortalConfig = {
     "Senate": { summary: "Leadership decisions, resolutions, and governance follow-up.", actions: ["Record resolution", "Review leadership matter", "Submit governance update"] },
     "Elders": { summary: "Member care, spiritual support, visits, and escalation of urgent needs.", actions: ["Log care visit", "Record prayer need", "Escalate member concern"] },
@@ -503,12 +526,16 @@ function ji() {
     if (isPositionUser) {
       return [{ k: "position-portal", label: (assignedPosition?.title || currentUser.role) + " Portal", icon: Wt }];
     }
+    if (isProphetUser) {
+      return [{ k: "prophet-branch", label: "My Branch Portal", icon: xn }];
+    }
     if (!isAdminUser) {
       return [];
     }
     // Admin Control Centre / Prophet
     return [
       { k: "overview", label: "Overview", icon: Wr },
+      { k: "projects", label: "Projects", icon: Wt },
       { k: "branches", label: "Branch Management", icon: qn },
       { k: "media", label: "Media Hub", icon: Vt },
       { k: "users", label: "User Management", icon: Wt },
@@ -534,10 +561,14 @@ function ji() {
       if (activeTab !== "position-portal") setActiveTab("position-portal");
       return;
     }
+    if (isProphetUser) {
+      if (activeTab !== "prophet-branch") setActiveTab("prophet-branch");
+      return;
+    }
     if (!isAdminUser && activeTab !== "restricted") {
       setActiveTab("restricted");
     }
-  }, [isMember, isMediaTeam, isAdminUser, activeTab]);
+  }, [isMember, isMediaTeam, isAdminUser, isPositionUser, isProphetUser, activeTab]);
 
   let filteredBranches = M.useMemo(() => {
     return branches.filter((c) => {
@@ -580,6 +611,10 @@ function ji() {
             setIsLoggedIn(true);
             setCurrentUser({ authUserId: adminAuthData.user.id, username: adminName, email: adminEmail, role: isArchbishop ? "Archbishop" : "Prophet", branch: "MVUMA HQ", perms: ["all"] });
             setActiveTab("overview");
+            if (isArchbishop) {
+              setShowArchbishopWelcome(true);
+              setTimeout(() => setShowArchbishopWelcome(false), 5500);
+            }
             recordActivity(adminName, isArchbishop ? "Archbishop" : "Prophet", "Signed in", "MVUMA HQ");
             setAuditLogs(c => ["[" + getUtcTime() + " UTC] " + (isArchbishop ? "ARCHBISHOP" : "ROOT") + " AUTH - " + adminName + " - MVUMA HQ", ...c]);
             showToast("Welcome " + adminName);
@@ -706,8 +741,11 @@ function ji() {
       lastLogin: "Never"
     };
     setStaffList(y => [newUser, ...y]);
+    if (newStaffForm.position) {
+      setPositions(items => items.map(position => position.title === newStaffForm.position ? { ...position, assignedTo: newUser.username, assigned_to: newUser.username } : position));
+    }
     setAuditLogs(y => ["[" + getUtcTime() + " UTC] New staff created: " + newUser.username + " (" + newUser.role + ")", ...y]);
-    setNewStaffForm({ username: "", password: "", role: "Media Team", branch: "MVUMA HQ" });
+    setNewStaffForm({ username: "", password: "", role: "Media Team", position: "", branch: "MVUMA HQ" });
     showToast("Staff account created for " + newUser.username);
   };
 
@@ -1143,6 +1181,13 @@ function ji() {
     }
   }, [activeTab]);
 
+  M.default.useEffect(() => {
+    if (activeTab !== "pulpit" || currentUser?.username !== "Archbishop Makururu") return;
+    setShowArchbishopWelcome(true);
+    let timer = setTimeout(() => setShowArchbishopWelcome(false), 5500);
+    return () => clearTimeout(timer);
+  }, [activeTab, currentUser]);
+
   const toggleProjectorBlackout = () => {
     if (activeTab !== "pulpit") {
       setBroadcastingStatus("idle");
@@ -1404,6 +1449,17 @@ function ji() {
   return d("div", {
     className: "min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-[#020617] text-white selection:bg-[#00D4FF]/30 relative",
     children: [
+      showArchbishopWelcome && d("div", {
+        className: "fixed inset-0 z-[60] pointer-events-none flex items-center justify-center overflow-hidden",
+        children: [
+          d("div", { className: "archbishop-welcome relative z-10 mx-5 max-w-[620px] rounded-[24px] border border-amber-300/40 bg-[#07132b]/95 px-8 py-7 text-center shadow-[0_0_70px_rgba(251,191,36,0.35)]", children: [
+            i("div", { className: "text-amber-300 text-[11px] font-black tracking-[0.28em]", children: "WELCOME BACK" }),
+            i("div", { className: "mt-3 text-[24px] md:text-[34px] font-black tracking-wide text-white", children: "Archbishop Dr Andby Makururu" }),
+            i("div", { className: "mt-3 text-[12px] tracking-[0.22em] text-[#00D4FF]", children: "THE PROPHET SEAT IS READY • MVUMA HQ" })
+          ] }),
+          ...["#00D4FF", "#FBBF24", "#F472B6", "#34D399", "#FB7185", "#A78BFA"].map((color, index) => d("div", { key: color, className: "archbishop-balloon absolute bottom-[-70px] w-10 h-12 rounded-[50%] shadow-[0_0_20px_rgba(255,255,255,0.18)]", style: { background: color, left: (10 + index * 15) + "%", animationDelay: (index * 0.18) + "s" }, children: i("div", { className: "absolute top-11 left-1/2 w-px h-20 bg-white/40" }) }))
+        ]
+      }),
       toastMessage && d("div", {
         className: "fixed top-4 right-4 z-50 px-4 py-2.5 rounded-xl bg-[#00D4FF]/20 border border-[#00D4FF]/40 text-[#00D4FF] text-[12px] font-bold shadow-[0_0_20px_rgba(0,212,255,0.4)] backdrop-blur-md",
         children: toastMessage
@@ -1436,8 +1492,7 @@ function ji() {
                   d("div", {
                     className: "hidden lg:flex items-center gap-2",
                     children: [
-                      d("a", { href: "https://j5mediahub.vercel.app", target: "_blank", rel: "noopener", className: "h-8 px-3 rounded-full bg-white/5 border border-white/10 hover:border-[#00D4FF]/40 text-[11px] tracking-widest flex items-center gap-2", children: [i(Vt, { className: "w-4 h-4 text-[#00D4FF]" }), "Open J5 Media Hub Live ", i(Nn, { className: "w-3 h-3" })] }),
-                      d("a", { href: "https://j5-church-connect-branches1.vercel.app", target: "_blank", rel: "noopener", className: "h-8 px-3 rounded-full bg-white/5 border border-white/10 hover:border-[#00D4FF]/40 text-[11px] tracking-widest flex items-center gap-2", children: [i(qn, { className: "w-4 h-4 text-[#00D4FF]" }), "Branch Connect Live ", i(Nn, { className: "w-3 h-3" })] }),
+                      (isAdminUser || isMediaTeam) && d("a", { href: "https://j5mediahub.vercel.app", target: "_blank", rel: "noopener", className: "h-8 px-3 rounded-full bg-white/5 border border-white/10 hover:border-[#00D4FF]/40 text-[11px] tracking-widest flex items-center gap-2", children: [i(Vt, { className: "w-4 h-4 text-[#00D4FF]" }), "Open J5 Media Hub Live ", i(Nn, { className: "w-3 h-3" })] }),
                       d("a", { href: "https://www.facebook.com/", target: "_blank", rel: "noopener", className: "h-8 px-3 rounded-full bg-[#00D4FF]/15 border border-[#00D4FF]/30 text-[#00D4FF] text-[11px] tracking-widest flex items-center gap-2", children: [i(Lt, { className: "w-4 h-4" }), "Dr Andby Makururu Facebook Page ", i(Nn, { className: "w-3 h-3" })] })
                     ]
                   }),
@@ -1454,8 +1509,7 @@ function ji() {
           d("div", {
             className: "lg:hidden px-4 pb-2.5 flex gap-2 overflow-x-auto w-full max-w-full no-scrollbar",
             children: [
-              i("a", { href: "https://j5mediahub.vercel.app", target: "_blank", className: "whitespace-nowrap h-7 px-3 rounded-full bg-white/5 border border-white/10 text-[10px] tracking-widest flex items-center gap-1.5", children: "Media Hub Live" }),
-              i("a", { href: "https://j5-church-connect-branches1.vercel.app", target: "_blank", className: "whitespace-nowrap h-7 px-3 rounded-full bg-white/5 border border-white/10 text-[10px] tracking-widest flex items-center gap-1.5", children: "Branch Connect" }),
+              (isAdminUser || isMediaTeam) && i("a", { href: "https://j5mediahub.vercel.app", target: "_blank", className: "whitespace-nowrap h-7 px-3 rounded-full bg-white/5 border border-white/10 text-[10px] tracking-widest flex items-center gap-1.5", children: "Media Hub Live" }),
               i("a", { href: "https://www.facebook.com/", target: "_blank", className: "whitespace-nowrap h-7 px-3 rounded-full bg-[#00D4FF]/15 border border-[#00D4FF]/30 text-[#00D4FF] text-[10px] tracking-widest flex items-center gap-1.5", children: "Dr Andby Makururu Page" })
             ]
           }),
@@ -1477,6 +1531,43 @@ function ji() {
       d("main", {
         className: "px-3 sm:px-4 md:px-6 py-6 md:py-8 max-w-[1600px] mx-auto space-y-8",
         children: [
+          isProphetUser && activeTab === "prophet-branch" && d("div", {
+            className: "space-y-6",
+            children: [
+              d("div", { className: "rounded-[24px] border border-amber-300/30 bg-gradient-to-br from-amber-500/10 via-[#020617] to-[#00D4FF]/10 p-6 md:p-8", children: [
+                i("div", { className: "text-[10px] tracking-widest text-amber-300 font-bold", children: "ASSIGNED BRANCH PORTAL" }),
+                i("h2", { className: "mt-2 text-[24px] md:text-[30px] font-black tracking-wide", children: assignedBranch?.name || currentUser.branch }),
+                i("p", { className: "mt-2 text-[12px] text-white/60", children: "Prophet access is limited to this assigned branch." }),
+                d("div", { className: "mt-6 grid sm:grid-cols-2 lg:grid-cols-4 gap-3", children: [
+                  { label: "BRANCH STATUS", value: assignedBranch?.status || "Active", color: "text-emerald-300" },
+                  { label: "REGISTERED MEMBERS", value: assignedBranchMembers.length, color: "text-[#00D4FF]" },
+                  { label: "BRANCH TOTAL", value: assignedBranch?.members || assignedBranchMembers.length, color: "text-amber-300" },
+                  { label: "PROPHET", value: currentUser.username, color: "text-white" }
+                ].map(stat => d("div", { key: stat.label, className: "rounded-xl bg-black/30 border border-white/10 p-4", children: [i("div", { className: "text-[9px] tracking-widest text-white/40", children: stat.label }), i("div", { className: "mt-2 font-black text-[14px] truncate " + stat.color, children: stat.value })] })) })
+              ] }),
+              d("div", { className: "grid lg:grid-cols-3 gap-4 md:gap-6", children: [
+                d("div", { className: "lg:col-span-2 rounded-[18px] bg-white/[0.05] border border-white/10 p-5 md:p-6", children: [
+                  d("div", { className: "flex items-center justify-between gap-3", children: [i("h3", { className: "font-bold tracking-widest text-[12px]", children: "MY BRANCH MEMBERS" }), i("span", { className: "text-[10px] text-white/40", children: assignedBranchMembers.length + " RECORDS" })] }),
+                  d("div", { className: "mt-4 space-y-2", children: assignedBranchMembers.length ? assignedBranchMembers.map(member => d("div", { key: member.id, className: "flex items-center justify-between gap-3 p-3 rounded-xl bg-black/30 border border-white/10", children: [d("div", { className: "min-w-0", children: [i("div", { className: "font-bold text-[12px] truncate", children: member.name }), i("div", { className: "text-[10px] text-white/40 truncate", children: [member.id, " • ", member.phone] })] }), i("span", { className: "shrink-0 text-[10px] text-emerald-300", children: member.status })] })) : i("div", { className: "p-4 rounded-xl bg-black/30 border border-white/10 text-[11px] text-white/40", children: "No member records are assigned to this branch yet." }) })
+                ] }),
+                d("div", { className: "rounded-[18px] bg-white/[0.05] border border-white/10 p-5 md:p-6", children: [
+                  i("h3", { className: "font-bold tracking-widest text-[12px] text-amber-300", children: "BRANCH CONTACT" }),
+                  d("div", { className: "mt-4 space-y-3 text-[12px]", children: [
+                    d("div", { className: "p-3 rounded-xl bg-black/30 border border-white/10", children: [i("div", { className: "text-[10px] text-white/40", children: "PASTOR / PROPHET" }), i("div", { className: "mt-1 font-bold", children: assignedBranch?.pastor || currentUser.username })] }),
+                    d("div", { className: "p-3 rounded-xl bg-black/30 border border-white/10", children: [i("div", { className: "text-[10px] text-white/40", children: "PHONE" }), i("div", { className: "mt-1 font-mono text-[#00D4FF]", children: assignedBranch?.phone || "Not listed" })] }),
+                    d("div", { className: "p-3 rounded-xl bg-black/30 border border-white/10", children: [i("div", { className: "text-[10px] text-white/40", children: "LOCATION" }), i("div", { className: "mt-1", children: assignedBranch?.address || "Branch location not listed" })] })
+                  ] })
+                ] }),
+              d("div", { className: "rounded-[20px] bg-white/[0.05] border border-white/10 p-5 md:p-6", children: [
+                i("h3", { className: "font-bold tracking-widest text-[12px] text-amber-300", children: "BRANCH REPORT TO CONTROL CENTRE" }),
+                i("p", { className: "mt-2 text-[11px] text-white/50", children: "Send a report, request, or update for your assigned branch." }),
+                i("textarea", { value: positionFeedback, onChange: e => setPositionFeedback(e.target.value), placeholder: "Write your branch report...", className: "mt-4 w-full h-28 rounded-xl bg-black/40 border border-white/10 p-3 text-[12px] resize-y" }),
+                i("button", { onClick: submitPositionFeedback, className: "mt-3 h-10 px-5 rounded-full bg-amber-300 text-black font-black text-[10px] tracking-widest hover:bg-amber-200", children: "SEND REPORT TO CONTROL CENTRE" })
+              ] })
+              ] })
+            ]
+          }),
+
           isPositionUser && activeTab === "position-portal" && d("div", {
             className: "max-w-4xl mx-auto space-y-6",
             children: [
@@ -1776,6 +1867,40 @@ function ji() {
             ]
           }),
 
+          // PROJECTS TAB (Admin only)
+          isAdminUser && activeTab === "projects" && d("div", {
+            className: "space-y-6",
+            children: [
+              d("div", { className: "flex items-center justify-between gap-3 flex-wrap", children: [
+                d("div", { children: [i("h2", { className: "font-black tracking-widest text-[15px]", children: "PROJECTS" }), i("p", { className: "mt-1 text-[11px] text-white/50", children: "Track command centre initiatives and delivery progress." })] }),
+                i("span", { className: "px-3 py-1 rounded-full bg-[#00D4FF]/10 border border-[#00D4FF]/20 text-[#00D4FF] text-[10px] tracking-widest font-bold", children: "LIVE WORKBOARD" })
+              ] }),
+              d("div", { className: "grid sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4", children: [
+                { label: "Active Projects", value: "4", color: "text-[#00D4FF]" },
+                { label: "Open Tasks", value: tasks.filter(task => !task.done).length, color: "text-amber-300" },
+                { label: "Completed Tasks", value: tasks.filter(task => task.done).length, color: "text-emerald-300" },
+                { label: "Branches Synced", value: branches.length, color: "text-white" }
+              ].map(stat => d("div", { key: stat.label, className: "rounded-[18px] bg-white/[0.05] border border-white/10 p-4 md:p-5", children: [i("div", { className: "text-[10px] tracking-widest text-white/40", children: stat.label }), i("div", { className: "mt-2 text-[24px] font-black " + stat.color, children: stat.value })] })) }),
+              d("div", { className: "grid md:grid-cols-2 gap-4 md:gap-6", children: [
+                [
+                  { name: "Member Portal Stability", owner: "Software CIOS", status: "In progress", detail: "Member login, profile uploads, and portal reliability", progress: 82 },
+                  { name: "Branch Network Sync", owner: "Branch Operations", status: "Live", detail: branches.length + " branch nodes connected to MVUMA HQ", progress: 100 },
+                  { name: "Media Distribution Hub", owner: "Media Team", status: "In progress", detail: "Facebook, YouTube, Instagram, and website publishing", progress: 68 },
+                  { name: "Prophet Seat Command", owner: "Archbishop Makururu", status: "Protected", detail: "Pulpit live controls and sanctum access", progress: 91 }
+                ].map(project => d("div", { key: project.name, className: "rounded-[18px] bg-white/[0.05] border border-white/10 p-5 md:p-6", children: [
+                  d("div", { className: "flex items-start justify-between gap-3", children: [d("div", { children: [i("h3", { className: "font-black text-[14px] tracking-wide", children: project.name }), i("p", { className: "mt-1 text-[11px] text-white/50", children: project.detail })] }), i("span", { className: "shrink-0 px-2 py-1 rounded-full text-[9px] tracking-widest border " + (project.status === "Live" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-300" : "bg-amber-500/10 border-amber-500/20 text-amber-300"), children: project.status })] }),
+                  d("div", { className: "mt-5 flex items-center justify-between text-[10px]", children: [i("span", { className: "text-white/40", children: "OWNER" }), i("span", { className: "font-bold text-[#00D4FF]", children: project.owner })] }),
+                  d("div", { className: "mt-2 h-2 rounded-full bg-black/40 overflow-hidden", children: i("div", { className: "h-full rounded-full bg-[#00D4FF]", style: { width: project.progress + "%" } }) }),
+                  i("div", { className: "mt-2 text-right text-[10px] text-white/40", children: project.progress + "% complete" })
+                ] }))
+              ] }),
+              d("div", { className: "rounded-[18px] bg-white/[0.05] border border-white/10 p-5 md:p-6", children: [
+                d("div", { className: "flex items-center justify-between gap-3", children: [i("h3", { className: "font-bold tracking-widest text-[12px]", children: "CURRENT DELIVERY TASKS" }), i("span", { className: "text-[10px] text-white/40", children: tasks.length + " TASKS" })] }),
+                d("div", { className: "mt-4 space-y-2", children: tasks.slice(0, 8).map(task => d("div", { key: task.id, className: "flex items-center gap-3 p-3 rounded-xl bg-black/30 border border-white/10", children: [i("span", { className: "w-2 h-2 rounded-full shrink-0 " + (task.done ? "bg-emerald-400" : "bg-amber-300") }), i("span", { className: "text-[11px] " + (task.done ? "line-through text-white/40" : "text-white/80"), children: task.label }), i("span", { className: "ml-auto text-[9px] tracking-widest text-white/30", children: task.done ? "DONE" : "OPEN" })] })) })
+              ] })
+            ]
+          }),
+
           // BRANCH MANAGEMENT TAB (Staff only)
           isAdminUser && activeTab === "branches" && d("div", {
             className: "space-y-6",
@@ -2047,6 +2172,7 @@ function ji() {
                           className: "grid grid-cols-2 gap-2",
                           children: [
                             d("select", { value: newStaffForm.role, onChange: (c) => setNewStaffForm(y => ({ ...y, role: c.target.value })), className: "h-11 rounded-xl bg-black/40 border border-white/10 px-3 text-[13px]", children: ["Prophet / Prophetess", "Archbishop", "Media Team", "Finance", "Member"].map(opt => i("option", { key: opt, className: "bg-[#020617]", children: opt })) }),
+                            d("select", { value: newStaffForm.position, onChange: (c) => setNewStaffForm(y => ({ ...y, position: c.target.value })), className: "h-11 rounded-xl bg-black/40 border border-white/10 px-3 text-[13px]", children: [i("option", { value: "", className: "bg-[#020617]", children: "Select position" }), ...positions.map(position => i("option", { key: position.id, value: position.title, className: "bg-[#020617]", children: position.title }))] }),
                             d("select", { value: newStaffForm.branch, onChange: (c) => setNewStaffForm(y => ({ ...y, branch: c.target.value })), className: "h-11 rounded-xl bg-black/40 border border-white/10 px-3 text-[13px]", children: branches.map(c => i("option", { key: c.id, className: "bg-[#020617]", children: c.name })) })
                           ]
                         }),
