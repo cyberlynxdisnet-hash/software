@@ -114,6 +114,21 @@ var G1 = [
   { id: "lusaka", name: "Lusaka Zambia", province: "Lusaka", country: "Zambia", isHQ: false, pastor: "Prophet D. Banda", phone: "+260 97 123 4567", address: "Lusaka Cairo Rd", gps: "-15.4067, 28.2871", members: 360, code: "J5-LSK-013", status: "Offline", founded: "2023", notes: "" }
 ];
 
+var southAfricanBranchNames = [
+  "Evaton", "Orange Farm A", "Phumla Mqash", "Orange Farm B", "Lawley", "Lakeside", "Polokong", "Tshirela", "Poortjie", "Bekkersdale", "Carltenvile", "Westernarea", "Cell City", "Randfontein", "Oliven", "Spruit", "Thembisa", "Diepsloot", "Cosmo City", "Soshanguve", "Mabopane", "Brits A", "Brits B", "Rustenburg", "Mpumalanga", "Mpumalanga Matsuli", "Eastern Cape", "Northern Cape"
+];
+
+function mergeSouthAfricanBranches(storedBranches) {
+  let existing = Array.isArray(storedBranches) ? storedBranches : [];
+  let existingNames = new Set(existing.map(branch => (branch.name || "").toLowerCase()));
+  let additions = southAfricanBranchNames.filter(name => !existingNames.has(name.toLowerCase())).map((name, index) => ({
+    id: "za-branch-" + (index + 1), name, province: "South Africa", country: "South Africa", isHQ: false,
+    pastor: "Unassigned", phone: "", address: "South African Branch", gps: "", members: 0,
+    code: "J5-ZA-" + String(index + 1).padStart(2, "0"), status: "Live", founded: "2026", notes: "South African branch"
+  }));
+  return existing.concat(additions);
+}
+
 var J1 = [
   { id: "s1", username: "Software CIOS", role: "Prophet", branch: "MVUMA HQ", perms: ["all"], active: true, twoFA: true, lastLogin: "2026-05-10 14:32 UTC" },
   { id: "s2", username: "media.lead", role: "Media Team", branch: "MVUMA HQ", perms: ["media", "pulpit"], active: true, twoFA: false, lastLogin: "2026-05-11 08:12 UTC" },
@@ -204,7 +219,7 @@ function ji() {
   let [activeTab, setActiveTab] = M.useState("overview");
   let [publicGalleryOpen, setPublicGalleryOpen] = M.useState(false);
 
-  let [branches, setBranches] = M.useState(() => getStored("j5_branches", G1));
+  let [branches, setBranches] = M.useState(() => mergeSouthAfricanBranches(getStored("j5_branches", G1)));
   let [branchSearch, setBranchSearch] = M.useState("");
   let [branchFilter, setBranchFilter] = M.useState("All");
   let [isAddBranchOpen, setIsAddBranchOpen] = M.useState(false);
@@ -382,7 +397,7 @@ function ji() {
     let loadBranches = async () => {
       let { data } = await window.cyberlyxSupabase.from("branches").select("*").order("created_at", { ascending: true });
       if (data && data.length) {
-        setBranches(data.map(c => ({ ...c, pastor: c.prophet || c.pastor || "" })));
+        setBranches(mergeSouthAfricanBranches(data.map(c => ({ ...c, pastor: c.prophet || c.pastor || "" }))));
       }
     };
     loadBranches();
@@ -669,8 +684,7 @@ function ji() {
       { k: "pulpit", label: "Pulpit Live", icon: Ut },
       { k: "ark", label: "Ark Members", icon: jn },
       { k: "events", label: "Events Calendar", icon: Wr },
-      { k: "shield", label: "Shield", icon: Rn },
-      { k: "system-protection", label: "J5 System Protection and anti hacking", icon: Rn },
+      { k: "shield", label: "J5 System Protection and anti hacking", icon: Vt },
       { k: "prophet", label: "Prophet & Prophetess Portal", icon: xn }
     ];
   }, [isMember, isMediaTeam, isAdminUser, isPositionUser, assignedPosition, currentUser]);
@@ -2237,7 +2251,7 @@ function ji() {
             ]
           }),
 
-          isAdminUser && activeTab === "system-protection" && d("div", {
+          isAdminUser && activeTab === "shield" && d("div", {
             className: "space-y-6",
             children: [
               d("div", { className: "rounded-[24px] border border-[#00D4FF]/30 bg-gradient-to-br from-[#00D4FF]/15 via-[#020617] to-emerald-500/10 p-6 md:p-8 relative overflow-hidden", children: [
@@ -2730,6 +2744,7 @@ function ji() {
                   })
                 ]
               }),
+              i("div", { className: "mt-6 mb-3 text-[11px] tracking-[0.2em] text-[#00D4FF] font-black", children: branchFilter === "South Africa" ? "SOUTH AFRICAN BRANCHES" : "NETWORK BRANCHES" }),
               i("div", {
                 className: "grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6",
                 children: filteredBranches.filter((c) => !c.isHQ).map((c) => d("div", {
@@ -3180,7 +3195,7 @@ function ji() {
           }),
 
           // SHIELD TAB (Staff only)
-          isAdminUser && activeTab === "shield" && d("div", {
+          isAdminUser && activeTab === "legacy-shield" && d("div", {
             className: "grid lg:grid-cols-3 gap-4 md:gap-6",
             children: [
               d("div", {
