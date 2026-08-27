@@ -3217,6 +3217,16 @@ function ji() {
                 ].map(stat => d("div", { key: stat.label, className: "rounded-xl bg-black/30 border border-white/10 p-4", children: [i("div", { className: "text-[9px] tracking-widest text-white/40", children: stat.label }), i("div", { className: "mt-2 font-black text-[18px] " + stat.color, children: stat.value })] })) })
               ] }),
               d("div", { className: "rounded-[20px] bg-white/[0.05] border border-white/10 p-5 md:p-6", children: [
+              d("div", { className: "rounded-[20px] bg-[#00D4FF]/5 border border-[#00D4FF]/20 p-5 md:p-6", children: [
+                i("h3", { className: "font-bold tracking-widest text-[12px] text-[#00D4FF]", children: "BURIAL SOCIETY MANAGEMENT CONTACTS" }),
+                d("div", { className: "mt-4 grid md:grid-cols-2 gap-3", children: [
+                  { role: "Manager", name: "Mr Makate", phone: "+263778575781" },
+                  { role: "Colleague", name: "Mr Richard Andrade", phone: "+263771287362" }
+                ].map(contact => d("div", { key: contact.phone, className: "flex items-center justify-between gap-3 rounded-xl bg-black/30 border border-white/10 p-4", children: [
+                  d("div", { children: [i("div", { className: "text-[10px] tracking-widest text-amber-300", children: contact.role.toUpperCase() }), i("div", { className: "mt-1 text-[12px] font-bold", children: contact.name })] }),
+                  i("a", { href: "tel:" + contact.phone, className: "shrink-0 text-[11px] font-mono text-[#00D4FF] hover:text-white", children: contact.phone })
+                ] }))
+              ] }),
                 d("div", { className: "flex items-center justify-between gap-3 flex-wrap", children: [i("h3", { className: "font-bold tracking-widest text-[12px] text-amber-300", children: "REGISTERED SOCIETY MEMBERS" }), i("span", { className: "text-[10px] text-white/40", children: burialSocietyMembers.length + " RECORDS" })] }),
                 burialSocietyMembers.length ? d("div", { className: "mt-4 grid md:grid-cols-2 xl:grid-cols-3 gap-3", children: burialSocietyMembers.map(member => d("div", { key: member.id, className: "rounded-xl bg-black/30 border border-white/10 p-4", children: [
                   d("div", { className: "flex items-start justify-between gap-3", children: [i("div", { className: "font-bold text-[12px]", children: member.name }), i("span", { className: "text-[9px] text-emerald-300", children: "REGISTERED" })] }),
