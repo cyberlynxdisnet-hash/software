@@ -810,15 +810,19 @@ function ji() {
           return;
         }
 
+        let burialStaffEmail = {
+          "mr makate": "innocentbs@j5internationalchurch.org",
+          "mr richard andrade": "richardbs@j5internationalchurch.org"
+        }[uTrim.toLowerCase()] || uTrim.toLowerCase();
         let burialStaff = {
           "innocentbs@j5internationalchurch.org": { username: "Mr Makate", role: "Burial Society Manager", phone: "+263778575781" },
           "richardbs@j5internationalchurch.org": { username: "Mr Richard Andrade", role: "Burial Society Colleague", phone: "+263771287362" }
-        }[uTrim.toLowerCase()];
+        }[burialStaffEmail];
         if (burialStaff && window.cyberlyxSupabase?.auth) {
-          let { data: staffAuthData, error: staffAuthError } = await window.cyberlyxSupabase.auth.signInWithPassword({ email: uTrim.toLowerCase(), password: staffPassword });
+          let { data: staffAuthData, error: staffAuthError } = await window.cyberlyxSupabase.auth.signInWithPassword({ email: burialStaffEmail, password: staffPassword });
           if (!staffAuthError && staffAuthData.user) {
             setIsLoggedIn(true);
-            setCurrentUser({ authUserId: staffAuthData.user.id, username: burialStaff.username, email: uTrim.toLowerCase(), role: burialStaff.role, branch: "MVUMA HQ", phone: burialStaff.phone, perms: ["burial-society"] });
+            setCurrentUser({ authUserId: staffAuthData.user.id, username: burialStaff.username, email: burialStaffEmail, role: burialStaff.role, branch: "MVUMA HQ", phone: burialStaff.phone, perms: ["burial-society"] });
             setActiveTab("burial-members");
             recordActivity(burialStaff.username, burialStaff.role, "Signed in", "MVUMA HQ");
             showToast("Welcome " + burialStaff.username);
