@@ -303,6 +303,7 @@ function ji() {
   let [smsSending, setSmsSending] = M.useState(false);
   let [smsStatus, setSmsStatus] = M.useState("");
   let [pledges, setPledges] = M.useState(() => getStored("j5_pledges", []));
+  let [burialRegistry, setBurialRegistry] = M.useState([]);
   let [pledgeForm, setPledgeForm] = M.useState({ id: "", name: "", phone: "", email: "", branch: "MVUMA HQ", type: "Money", amount: "", materials: "", notes: "", status: "New" });
   let [editingPledge, setEditingPledge] = M.useState(null);
 
@@ -502,6 +503,17 @@ function ji() {
     let channel = window.cyberlyxSupabase.channel("cyberlyx-members-live").on("postgres_changes", { event: "*", schema: "public", table: "members" }, loadMembers).subscribe();
     return () => window.cyberlyxSupabase.removeChannel(channel);
   }, [currentUser, branches]);
+
+  M.default.useEffect(() => {
+    if (!window.cyberlyxSupabase || !currentUser || (!["Software CIOS", "Archbishop Makururu"].includes(currentUser.username) && !isBurialSocietyStaff(currentUser))) return;
+    let loadBurialRegistry = async () => {
+      let { data } = await window.cyberlyxSupabase.from("burial_society_member_registry").select("*").order("source_number", { ascending: true });
+      if (data) setBurialRegistry(data);
+    };
+    loadBurialRegistry();
+    let channel = window.cyberlyxSupabase.channel("cyberlyx-burial-registry-live").on("postgres_changes", { event: "*", schema: "public", table: "burial_society_member_registry" }, loadBurialRegistry).subscribe();
+    return () => window.cyberlyxSupabase.removeChannel(channel);
+  }, [currentUser]);
 
   M.default.useEffect(() => {
     if (!window.cyberlyxSupabase || !currentUser?.authUserId || !["Software CIOS", "Archbishop Makururu"].includes(currentUser.username)) return;
@@ -3241,6 +3253,11 @@ function ji() {
                   { label: "BASIC PACKAGE", value: burialSocietyMembers.filter(member => member.burialSocietyPackage.indexOf("Basic") === 0).length, color: "text-[#00D4FF]" },
                   { label: "PREMIUM PACKAGE", value: burialSocietyMembers.filter(member => member.burialSocietyPackage.indexOf("Premium") === 0).length, color: "text-emerald-300" }
                 ].map(stat => d("div", { key: stat.label, className: "rounded-xl bg-black/30 border border-white/10 p-4", children: [i("div", { className: "text-[9px] tracking-widest text-white/40", children: stat.label }), i("div", { className: "mt-2 font-black text-[18px] " + stat.color, children: stat.value })] })) })
+              ] }),
+              d("div", { className: "rounded-[20px] bg-[#00D4FF]/5 border border-[#00D4FF]/20 p-5 md:p-6", children: [
+                d("div", { className: "flex items-center justify-between gap-3 flex-wrap", children: [i("h3", { className: "font-bold tracking-widest text-[12px] text-[#00D4FF]", children: "PRELOADED MASVINGO REGISTER" }), i("span", { className: "text-[10px] text-white/40", children: burialRegistry.length + " RECORDS" })] }),
+                i("p", { className: "mt-2 text-[11px] text-white/50", children: "Imported records remain pending until a member creates an account and is matched by verified details." }),
+                burialRegistry.length ? d("div", { className: "mt-4 grid md:grid-cols-2 xl:grid-cols-4 gap-2 max-h-80 overflow-auto", children: burialRegistry.map(record => d("div", { key: record.id, className: "rounded-lg bg-black/30 border border-white/10 p-3", children: [i("div", { className: "text-[9px] text-white/40", children: "REGISTER #" + record.source_number }), i("div", { className: "mt-1 text-[11px] font-bold", children: record.full_name || "Name unclear" }), i("div", { className: "mt-1 text-[10px] text-[#00D4FF]", children: record.phone || "Phone unclear" }), i("div", { className: "mt-1 text-[9px] text-amber-300", children: record.linked ? "LINKED" : "PENDING REGISTRATION" })] })) }) : i("div", { className: "mt-4 rounded-xl border border-dashed border-white/15 p-6 text-center text-[11px] text-white/45", children: "Registry not loaded yet. Run the Masvingo Burial Society SQL in Supabase and refresh." })
               ] }),
               d("div", { className: "rounded-[20px] bg-white/[0.05] border border-white/10 p-5 md:p-6", children: [
               d("div", { className: "rounded-[20px] bg-[#00D4FF]/5 border border-[#00D4FF]/20 p-5 md:p-6", children: [
