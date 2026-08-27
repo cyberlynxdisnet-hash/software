@@ -269,6 +269,17 @@ function ji() {
   M.default.useEffect(() => { saveStored("j5_read_notifications", readNotificationIds); }, [readNotificationIds]);
 
   M.default.useEffect(() => {
+    if (!window.cyberlyxSupabase || !currentUser || !["Software CIOS", "Archbishop Makururu"].includes(currentUser.username)) return;
+    let loadProjects = async () => {
+      let { data } = await window.cyberlyxSupabase.from("projects").select("*").order("created_at", { ascending: false });
+      if (data && data.length) setProjects(data.map(project => ({ ...project, detail: project.detail || "", progress: Number(project.progress) || 0 })));
+    };
+    loadProjects();
+    let channel = window.cyberlyxSupabase.channel("cyberlyx-projects-live").on("postgres_changes", { event: "*", schema: "public", table: "projects" }, loadProjects).subscribe();
+    return () => window.cyberlyxSupabase.removeChannel(channel);
+  }, [currentUser]);
+
+  M.default.useEffect(() => {
     if (!window.cyberlyxSupabase) {
       setIsAuthReady(true);
       return;
@@ -774,6 +785,19 @@ function ji() {
       return;
     }
     let project = { ...projectForm, id: editingProject?.id || "project-" + Date.now(), name: projectForm.name.trim(), detail: projectForm.detail.trim(), progress: Math.max(0, Math.min(100, Number(projectForm.progress) || 0)) };
+    if (window.cyberlyxSupabase && currentUser && ["Software CIOS", "Archbishop Makururu"].includes(currentUser.username)) {
+      let saveProject = async () => {
+        let { error } = editingProject
+          ? await window.cyberlyxSupabase.from("projects").update({ name: project.name, owner: project.owner, status: project.status, detail: project.detail, progress: project.progress, updated_at: new Date().toISOString() }).eq("id", project.id)
+          : await window.cyberlyxSupabase.from("projects").insert(project);
+        if (error) {
+          showToast("Project could not be saved online");
+          return;
+        }
+        showToast("Project saved online");
+      };
+      saveProject();
+    }
     setProjects(items => editingProject ? items.map(item => item.id === editingProject.id ? project : item) : [project, ...items]);
     setAuditLogs(logs => ["[" + getUtcTime() + " UTC] Project " + (editingProject ? "updated" : "created") + ": " + project.name, ...logs]);
     setProjectForm({ name: "", owner: "", status: "Planned", detail: "", progress: 0 });
@@ -787,6 +811,13 @@ function ji() {
   };
 
   const handleDeleteProject = (project) => {
+    if (window.cyberlyxSupabase && currentUser && ["Software CIOS", "Archbishop Makururu"].includes(currentUser.username)) {
+      let deleteOnlineProject = async () => {
+        let { error } = await window.cyberlyxSupabase.from("projects").delete().eq("id", project.id);
+        if (error) showToast("Project could not be deleted online");
+      };
+      deleteOnlineProject();
+    }
     setProjects(items => items.filter(item => item.id !== project.id));
     setAuditLogs(logs => ["[" + getUtcTime() + " UTC] Project deleted: " + project.name, ...logs]);
     showToast("Project deleted");
