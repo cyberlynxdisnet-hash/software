@@ -248,6 +248,9 @@ function ji() {
 
   let [eventList, setEventList] = M.useState(() => getStored("j5_events", initialEvents));
   let [eventFilter, setEventFilter] = M.useState("All");
+  let [pledges, setPledges] = M.useState(() => getStored("j5_pledges", []));
+  let [pledgeForm, setPledgeForm] = M.useState({ id: "", name: "", phone: "", email: "", branch: "MVUMA HQ", type: "Money", amount: "", materials: "", notes: "", status: "New" });
+  let [editingPledge, setEditingPledge] = M.useState(null);
 
   let [isSanctumUnlocked, setIsSanctumUnlocked] = M.useState(false);
   let [isSanctumLoading, setIsSanctumLoading] = M.useState(false);
@@ -266,6 +269,7 @@ function ji() {
   M.default.useEffect(() => { saveStored("j5_comments", liveComments); }, [liveComments]);
   M.default.useEffect(() => { saveStored("j5_assets", assetList); }, [assetList]);
   M.default.useEffect(() => { saveStored("j5_events", eventList); }, [eventList]);
+  M.default.useEffect(() => { saveStored("j5_pledges", pledges); }, [pledges]);
   M.default.useEffect(() => { saveStored("j5_read_notifications", readNotificationIds); }, [readNotificationIds]);
 
   M.default.useEffect(() => {
@@ -276,6 +280,19 @@ function ji() {
     };
     loadProjects();
     let channel = window.cyberlyxSupabase.channel("cyberlyx-projects-live").on("postgres_changes", { event: "*", schema: "public", table: "projects" }, loadProjects).subscribe();
+    return () => window.cyberlyxSupabase.removeChannel(channel);
+  }, [currentUser]);
+
+  M.default.useEffect(() => {
+    if (!window.cyberlyxSupabase || !currentUser) return;
+    let loadPledges = async () => {
+      let query = window.cyberlyxSupabase.from("pledges").select("*").order("created_at", { ascending: false });
+      if (!isAdminUser) query = query.eq("auth_user_id", currentUser.authUserId || "00000000-0000-0000-0000-000000000000");
+      let { data } = await query;
+      if (data && data.length) setPledges(data);
+    };
+    loadPledges();
+    let channel = window.cyberlyxSupabase.channel("cyberlyx-pledges-live").on("postgres_changes", { event: "*", schema: "public", table: "pledges" }, loadPledges).subscribe();
     return () => window.cyberlyxSupabase.removeChannel(channel);
   }, [currentUser]);
 
@@ -507,6 +524,35 @@ function ji() {
     showToast("Application opened in WhatsApp");
   };
 
+  const handleSavePledge = async () => {
+    if (!pledgeForm.name.trim() || !pledgeForm.phone.trim() || !pledgeForm.branch) {
+      showToast("Name, phone, and branch are required");
+      return;
+    }
+    if (pledgeForm.type === "Money" && !pledgeForm.amount.trim() || pledgeForm.type === "Materials" && !pledgeForm.materials.trim()) {
+      showToast(pledgeForm.type === "Money" ? "Enter the pledged amount" : "Describe the pledged materials");
+      return;
+    }
+    let pledge = { ...pledgeForm, id: editingPledge?.id || "pledge-" + Date.now(), auth_user_id: currentUser?.authUserId || null, owner_key: pledgeOwnerKey, name: pledgeForm.name.trim(), phone: pledgeForm.phone.trim(), email: pledgeForm.email.trim(), notes: pledgeForm.notes.trim(), status: pledgeForm.status || "New" };
+    if (window.cyberlyxSupabase && currentUser?.authUserId) {
+      let payload = { auth_user_id: pledge.auth_user_id, owner_key: pledge.owner_key, name: pledge.name, phone: pledge.phone, email: pledge.email, branch: pledge.branch, pledge_type: pledge.type, amount: pledge.amount || "", materials: pledge.materials || "", notes: pledge.notes, status: pledge.status, updated_at: new Date().toISOString() };
+      let result = editingPledge ? await window.cyberlyxSupabase.from("pledges").update(payload).eq("id", pledge.id) : await window.cyberlyxSupabase.from("pledges").insert({ id: pledge.id, ...payload });
+      if (result.error) {
+        showToast("Pledge could not be saved online");
+        return;
+      }
+    }
+    setPledges(items => editingPledge ? items.map(item => item.id === pledge.id ? pledge : item) : [pledge, ...items]);
+    setPledgeForm({ id: "", name: "", phone: "", email: "", branch: currentUser?.branch || "MVUMA HQ", type: "Money", amount: "", materials: "", notes: "", status: "New" });
+    setEditingPledge(null);
+    showToast(editingPledge ? "Pledge updated" : "Pledge recorded");
+  };
+
+  const handleEditPledge = (pledge) => {
+    setEditingPledge(pledge);
+    setPledgeForm({ id: pledge.id, name: pledge.name || "", phone: pledge.phone || "", email: pledge.email || "", branch: pledge.branch || "MVUMA HQ", type: pledge.pledge_type || pledge.type || "Money", amount: pledge.amount || "", materials: pledge.materials || "", notes: pledge.notes || "", status: pledge.status || "New" });
+  };
+
   // Roles access classification
   let isMember = currentUser && currentUser.role === "Member";
   let isMediaTeam = currentUser && (currentUser.role === "Media Team" || (currentUser.perms && currentUser.perms.includes("media") && !currentUser.perms.includes("all") && !currentUser.perms.includes("branches")));
@@ -517,6 +563,8 @@ function ji() {
   let assignedBranch = currentUser && branches.find(branch => branch.name === currentUser.branch);
   let assignedBranchMembers = currentUser && arkMembers.filter(member => member.branch === currentUser.branch);
   let assignedBranchEvents = currentUser && eventList.filter(event => !event.branch || event.branch === "All Branches" || event.branch === currentUser.branch || event.branch === assignedBranch?.id);
+  let pledgeOwnerKey = currentUser && (currentUser.authUserId || currentUser.memberId || currentUser.email || currentUser.username);
+  let visiblePledges = isAdminUser ? pledges : pledges.filter(pledge => pledge.owner_key === pledgeOwnerKey || (pledge.auth_user_id && pledge.auth_user_id === currentUser?.authUserId));
     let notificationItems = currentUser ? portalFeedback.filter(item => isAdminUser ? (item.status || "New") === "New" : item.submitted_by === currentUser.username && item.admin_reply) : [];
     let unreadNotifications = notificationItems.filter(item => !readNotificationIds.includes(item.id));
   let positionPortalConfig = {
@@ -544,20 +592,22 @@ function ji() {
     if (isMember) {
       return [
         { k: "member-portal", label: "My Member Portal", icon: jn },
-        { k: "events", label: "Upcoming Events", icon: Wr }
+        { k: "events", label: "Upcoming Events", icon: Wr },
+        { k: "pledges", label: "Pledges", icon: Gr }
       ];
     }
     if (isMediaTeam) {
       return [
         { k: "media", label: "Media Hub", icon: Vt },
-        { k: "pulpit", label: "Pulpit Live", icon: Ut }
+        { k: "pulpit", label: "Pulpit Live", icon: Ut },
+        { k: "pledges", label: "Pledges", icon: Gr }
       ];
     }
     if (isPositionUser) {
-      return [{ k: "position-portal", label: (assignedPosition?.title || currentUser.role) + " Portal", icon: Wt }];
+      return [{ k: "position-portal", label: (assignedPosition?.title || currentUser.role) + " Portal", icon: Wt }, { k: "pledges", label: "Pledges", icon: Gr }];
     }
     if (isProphetUser) {
-      return [{ k: "prophet-branch", label: "My Branch Portal", icon: xn }];
+      return [{ k: "prophet-branch", label: "My Branch Portal", icon: xn }, { k: "pledges", label: "Pledges", icon: Gr }];
     }
     if (!isAdminUser) {
       return [];
@@ -565,6 +615,7 @@ function ji() {
     // Admin Control Centre / Prophet
     return [
       { k: "overview", label: "Overview", icon: Wr },
+      { k: "pledges", label: "Pledges", icon: Gr },
       { k: "projects", label: "Projects", icon: Wt },
       { k: "branches", label: "Branch Management", icon: qn },
       { k: "media", label: "Media Hub", icon: Vt },
@@ -579,6 +630,7 @@ function ji() {
 
   // Ensure user is on a permitted tab
   M.default.useEffect(() => {
+    if (activeTab === "pledges") return;
     if (isMember) {
       if (activeTab !== "member-portal" && activeTab !== "events") setActiveTab("member-portal");
       return;
@@ -1641,6 +1693,42 @@ function ji() {
       d("main", {
         className: "px-3 sm:px-4 md:px-6 py-6 md:py-8 max-w-[1600px] mx-auto space-y-8",
         children: [
+          activeTab === "pledges" && d("div", { className: "space-y-6", children: [
+            d("div", { className: "rounded-[24px] border border-amber-300/30 bg-gradient-to-br from-amber-500/10 via-[#020617] to-[#00D4FF]/10 p-6 md:p-8", children: [
+              i("div", { className: "text-[10px] tracking-widest text-amber-300 font-bold", children: "MVUMA HOLY LAND BUILD" }),
+              i("h2", { className: "mt-2 text-[24px] md:text-[32px] font-black tracking-wide", children: "PLEDGE TO BUILD OUR OFFICES & CHURCH" }),
+              i("p", { className: "mt-2 max-w-3xl text-[12px] text-white/60", children: "Every branch and supporter can record a money or materials pledge for the Mvuma Holy Land project." })
+            ] }),
+            d("div", { className: "grid lg:grid-cols-3 gap-4 md:gap-6", children: [
+              d("div", { className: "lg:col-span-2 rounded-[20px] bg-white/[0.05] border border-white/10 p-5 md:p-6", children: [
+                i("h3", { className: "font-bold tracking-widest text-[12px] text-[#00D4FF]", children: editingPledge ? "EDIT PLEDGE RECORD" : "RECORD A PLEDGE" }),
+                d("div", { className: "mt-4 grid sm:grid-cols-2 gap-3", children: [
+                  i("input", { value: pledgeForm.name, onChange: e => setPledgeForm(form => ({ ...form, name: e.target.value })), placeholder: "Full name", className: "h-10 px-3 rounded-lg bg-black/40 border border-white/10 text-[12px]" }),
+                  i("input", { value: pledgeForm.phone, onChange: e => setPledgeForm(form => ({ ...form, phone: e.target.value })), placeholder: "Phone number", className: "h-10 px-3 rounded-lg bg-black/40 border border-white/10 text-[12px]" }),
+                  i("input", { value: pledgeForm.email, onChange: e => setPledgeForm(form => ({ ...form, email: e.target.value })), placeholder: "Email address", className: "h-10 px-3 rounded-lg bg-black/40 border border-white/10 text-[12px]" }),
+                  d("select", { value: pledgeForm.branch, onChange: e => setPledgeForm(form => ({ ...form, branch: e.target.value })), className: "h-10 px-3 rounded-lg bg-black/40 border border-white/10 text-[12px]", children: branches.map(branch => i("option", { key: branch.id, value: branch.name, children: branch.name })) }),
+                  d("select", { value: pledgeForm.type, onChange: e => setPledgeForm(form => ({ ...form, type: e.target.value, amount: "", materials: "" })), className: "h-10 px-3 rounded-lg bg-black/40 border border-white/10 text-[12px]", children: ["Money", "Materials"].map(type => i("option", { key: type, value: type, children: type })) }),
+                  pledgeForm.type === "Money" ? i("input", { value: pledgeForm.amount, onChange: e => setPledgeForm(form => ({ ...form, amount: e.target.value })), placeholder: "Amount pledged (e.g. $500)", className: "h-10 px-3 rounded-lg bg-black/40 border border-white/10 text-[12px]" }) : i("input", { value: pledgeForm.materials, onChange: e => setPledgeForm(form => ({ ...form, materials: e.target.value })), placeholder: "Materials pledged (e.g. cement, bricks)", className: "h-10 px-3 rounded-lg bg-black/40 border border-white/10 text-[12px]" })
+                ] }),
+                i("textarea", { value: pledgeForm.notes, onChange: e => setPledgeForm(form => ({ ...form, notes: e.target.value })), placeholder: "Additional details, quantity, delivery date, or message...", className: "mt-3 w-full h-24 px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-[12px]" }),
+                d("div", { className: "mt-3 flex gap-2 justify-end", children: [editingPledge && i("button", { onClick: () => { setEditingPledge(null); setPledgeForm({ id: "", name: "", phone: "", email: "", branch: currentUser.branch || "MVUMA HQ", type: "Money", amount: "", materials: "", notes: "", status: "New" }); }, className: "h-10 px-4 rounded-full bg-white/5 border border-white/10 text-[10px]", children: "CANCEL" }), i("button", { onClick: handleSavePledge, className: "h-10 px-5 rounded-full bg-amber-300 text-black font-black text-[10px] tracking-widest", children: editingPledge ? "UPDATE PLEDGE" : "SUBMIT PLEDGE" })] })
+              ] }),
+              d("div", { className: "rounded-[20px] bg-white/[0.05] border border-white/10 p-5 md:p-6", children: [
+                i("h3", { className: "font-bold tracking-widest text-[12px] text-amber-300", children: "PROJECT PURPOSE" }),
+                d("div", { className: "mt-4 space-y-3 text-[12px] text-white/70", children: [i("p", { children: "Money pledges support land, construction, offices, and church development." }), i("p", { children: "Material pledges can include cement, bricks, roofing, steel, electrical supplies, furniture, and equipment." }), i("p", { children: "Records can be updated later when quantities, contacts, or delivery details are confirmed." })] })
+              ] })
+            ] }),
+            d("div", { className: "rounded-[20px] bg-white/[0.05] border border-white/10 p-5 md:p-6", children: [
+              d("div", { className: "flex items-center justify-between gap-3", children: [i("h3", { className: "font-bold tracking-widest text-[12px] text-[#00D4FF]", children: isAdminUser ? "ALL PLEDGES BY BRANCH" : "MY PLEDGES" }), i("span", { className: "text-[10px] text-white/40", children: visiblePledges.length + " RECORDS" })] }),
+              d("div", { className: "mt-4 grid md:grid-cols-2 xl:grid-cols-3 gap-3", children: visiblePledges.length ? visiblePledges.map(pledge => d("div", { key: pledge.id, className: "rounded-xl bg-black/30 border border-white/10 p-3", children: [
+                d("div", { className: "flex items-start justify-between gap-2", children: [i("div", { className: "font-bold text-[12px]", children: pledge.name }), i("span", { className: "text-[9px] text-amber-300", children: pledge.branch })] }),
+                i("div", { className: "mt-2 text-[10px] text-[#00D4FF]", children: pledge.pledge_type || pledge.type }),
+                i("div", { className: "mt-1 text-[11px] text-white/70", children: pledge.pledge_type === "Materials" || pledge.type === "Materials" ? pledge.materials : pledge.amount }),
+                pledge.notes && i("div", { className: "mt-2 text-[10px] text-white/50", children: pledge.notes }),
+                isAdminUser && i("button", { onClick: () => handleEditPledge(pledge), className: "mt-3 text-[10px] text-[#00D4FF]", children: "EDIT RECORD" })
+              ] })) : i("div", { className: "text-[11px] text-white/40", children: "No pledges recorded yet." }) })
+            ] })
+          ] }),
           isProphetUser && activeTab === "prophet-branch" && d("div", {
             className: "space-y-6",
             children: [
