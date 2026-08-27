@@ -189,6 +189,10 @@ function saveStored(key, val) {
   } catch (e) {}
 }
 
+function isBurialSocietyStaff(user) {
+  return !!user && ["innocentbs@j5internationalchurch.org", "richardbs@j5internationalchurch.org"].includes((user.email || "").toLowerCase());
+}
+
 function ji() {
   let [isLoggedIn, setIsLoggedIn] = M.useState(false);
   let [loginTab, setLoginTab] = M.useState("staff");
@@ -323,7 +327,7 @@ function ji() {
   M.default.useEffect(() => { saveStored("j5_read_notifications", readNotificationIds); }, [readNotificationIds]);
 
   M.default.useEffect(() => {
-    if (!window.cyberlyxSupabase || !currentUser || !["Software CIOS", "Archbishop Makururu"].includes(currentUser.username)) return;
+    if (!window.cyberlyxSupabase || !currentUser || (!["Software CIOS", "Archbishop Makururu"].includes(currentUser.username) && !isBurialSocietyStaff(currentUser))) return;
     let loadProjects = async () => {
       let { data } = await window.cyberlyxSupabase.from("projects").select("*").order("created_at", { ascending: false });
       if (data && data.length) setProjects(data.map(project => ({ ...project, detail: project.detail || "", progress: Number(project.progress) || 0 })));
@@ -620,6 +624,7 @@ function ji() {
   let isMember = currentUser && currentUser.role === "Member";
   let isMediaTeam = currentUser && (currentUser.role === "Media Team" || (currentUser.perms && currentUser.perms.includes("media") && !currentUser.perms.includes("all") && !currentUser.perms.includes("branches")));
   let isAdminUser = currentUser && ["Software CIOS", "Archbishop Makururu"].includes(currentUser.username);
+  let isBurialStaff = isBurialSocietyStaff(currentUser);
   let isProphetUser = currentUser && !isMember && !isMediaTeam && !isAdminUser && ["Prophet", "Prophetess", "Prophet / Prophetess"].includes(currentUser.role);
   let assignedPosition = currentUser && positions.find(position => position.assignedTo === currentUser.username);
   let isPositionUser = currentUser && !isMember && !isMediaTeam && !isAdminUser && !isProphetUser;
@@ -676,6 +681,9 @@ function ji() {
     if (isProphetUser) {
       return [{ k: "prophet-branch", label: "My Branch Portal", icon: xn }, { k: "pledges", label: "Pledges", icon: Gr }];
     }
+    if (isBurialStaff) {
+      return [{ k: "burial-members", label: "The Burial SOCIETY MEMBERS", icon: jn }];
+    }
     if (!isAdminUser) {
       return [];
     }
@@ -694,7 +702,7 @@ function ji() {
       { k: "shield", label: "J5 System Protection and anti hacking", icon: Vt },
       { k: "prophet", label: "Prophet & Prophetess Portal", icon: xn }
     ];
-  }, [isMember, isMediaTeam, isAdminUser, isPositionUser, assignedPosition, currentUser]);
+  }, [isMember, isMediaTeam, isAdminUser, isPositionUser, isBurialStaff, assignedPosition, currentUser]);
 
   // Ensure user is on a permitted tab
   M.default.useEffect(() => {
@@ -715,10 +723,10 @@ function ji() {
       if (activeTab !== "prophet-branch") setActiveTab("prophet-branch");
       return;
     }
-    if (!isAdminUser && activeTab !== "restricted") {
+    if (!isAdminUser && !isBurialStaff && activeTab !== "restricted") {
       setActiveTab("restricted");
     }
-  }, [isMember, isMediaTeam, isAdminUser, isPositionUser, isProphetUser, activeTab]);
+  }, [isMember, isMediaTeam, isAdminUser, isBurialStaff, isPositionUser, isProphetUser, activeTab]);
 
   let filteredBranches = M.useMemo(() => {
     return branches.filter((c) => {
@@ -771,6 +779,24 @@ function ji() {
           recordActivity(adminName, offlineDemoAdmin.role, "Signed in", "MVUMA HQ");
           setAuditLogs(c => ["[" + getUtcTime() + " UTC] " + (isArchbishop ? "ARCHBISHOP" : "ROOT") + " AUTH - " + adminName + " - MVUMA HQ", ...c]);
           showToast("Welcome " + adminName + " (Demo Mode)");
+          return;
+        }
+
+        let burialStaff = {
+          "innocentbs@j5internationalchurch.org": { username: "Mr Makate", role: "Burial Society Manager", phone: "+263778575781" },
+          "richardbs@j5internationalchurch.org": { username: "Mr Richard Andrade", role: "Burial Society Colleague", phone: "+263771287362" }
+        }[uTrim.toLowerCase()];
+        if (burialStaff && window.cyberlyxSupabase?.auth) {
+          let { data: staffAuthData, error: staffAuthError } = await window.cyberlyxSupabase.auth.signInWithPassword({ email: uTrim.toLowerCase(), password: staffPassword });
+          if (!staffAuthError && staffAuthData.user) {
+            setIsLoggedIn(true);
+            setCurrentUser({ authUserId: staffAuthData.user.id, username: burialStaff.username, email: uTrim.toLowerCase(), role: burialStaff.role, branch: "MVUMA HQ", phone: burialStaff.phone, perms: ["burial-society"] });
+            setActiveTab("burial-members");
+            recordActivity(burialStaff.username, burialStaff.role, "Signed in", "MVUMA HQ");
+            showToast("Welcome " + burialStaff.username);
+            return;
+          }
+          setAuthError("Burial Society login failed: " + (staffAuthError?.message || "check the email and Supabase password"));
           return;
         }
 
@@ -3203,7 +3229,7 @@ function ji() {
           }),
 
           // SHIELD TAB (Staff only)
-          isAdminUser && activeTab === "burial-members" && d("div", {
+          (isAdminUser || isBurialStaff) && activeTab === "burial-members" && d("div", {
             className: "space-y-6",
             children: [
               d("div", { className: "rounded-[24px] border border-amber-300/30 bg-gradient-to-br from-amber-500/15 via-[#020617] to-[#00D4FF]/10 p-6 md:p-8", children: [
@@ -3220,12 +3246,9 @@ function ji() {
               d("div", { className: "rounded-[20px] bg-[#00D4FF]/5 border border-[#00D4FF]/20 p-5 md:p-6", children: [
                 i("h3", { className: "font-bold tracking-widest text-[12px] text-[#00D4FF]", children: "BURIAL SOCIETY MANAGEMENT CONTACTS" }),
                 d("div", { className: "mt-4 grid md:grid-cols-2 gap-3", children: [
-                  { role: "Manager", name: "Mr Makate", phone: "+263778575781" },
-                  { role: "Colleague", name: "Mr Richard Andrade", phone: "+263771287362" }
-                ].map(contact => d("div", { key: contact.phone, className: "flex items-center justify-between gap-3 rounded-xl bg-black/30 border border-white/10 p-4", children: [
-                  d("div", { children: [i("div", { className: "text-[10px] tracking-widest text-amber-300", children: contact.role.toUpperCase() }), i("div", { className: "mt-1 text-[12px] font-bold", children: contact.name })] }),
-                  i("a", { href: "tel:" + contact.phone, className: "shrink-0 text-[11px] font-mono text-[#00D4FF] hover:text-white", children: contact.phone })
-                ] }))
+                  d("div", { className: "flex items-center justify-between gap-3 rounded-xl bg-black/30 border border-white/10 p-4", children: [d("div", { children: [i("div", { className: "text-[10px] tracking-widest text-amber-300", children: "MANAGER" }), i("div", { className: "mt-1 text-[12px] font-bold", children: "Mr Makate" })] }), i("a", { href: "tel:+263778575781", className: "shrink-0 text-[11px] font-mono text-[#00D4FF] hover:text-white", children: "+263778575781" })] }),
+                  d("div", { className: "flex items-center justify-between gap-3 rounded-xl bg-black/30 border border-white/10 p-4", children: [d("div", { children: [i("div", { className: "text-[10px] tracking-widest text-amber-300", children: "COLLEAGUE" }), i("div", { className: "mt-1 text-[12px] font-bold", children: "Mr Richard Andrade" })] }), i("a", { href: "tel:+263771287362", className: "shrink-0 text-[11px] font-mono text-[#00D4FF] hover:text-white", children: "+263771287362" })] })
+                ] })
               ] }),
                 d("div", { className: "flex items-center justify-between gap-3 flex-wrap", children: [i("h3", { className: "font-bold tracking-widest text-[12px] text-amber-300", children: "REGISTERED SOCIETY MEMBERS" }), i("span", { className: "text-[10px] text-white/40", children: burialSocietyMembers.length + " RECORDS" })] }),
                 burialSocietyMembers.length ? d("div", { className: "mt-4 grid md:grid-cols-2 xl:grid-cols-3 gap-3", children: burialSocietyMembers.map(member => d("div", { key: member.id, className: "rounded-xl bg-black/30 border border-white/10 p-4", children: [
