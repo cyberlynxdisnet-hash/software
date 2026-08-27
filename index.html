@@ -35,6 +35,36 @@
     opacity: 1 !important;
     filter: none !important;
   }
+  @media print {
+    @page { size: A4; margin: 14mm; }
+    html, body { background: #ffffff !important; color: #111827 !important; }
+    body { font-family: Georgia, "Times New Roman", serif !important; }
+    .no-print, button, input[type="file"] { display: none !important; }
+    header { position: static !important; background: #ffffff !important; border-color: #d1d5db !important; color: #111827 !important; }
+    main { max-width: none !important; padding: 18px 0 !important; color: #111827 !important; }
+    footer { color: #6b7280 !important; border-color: #d1d5db !important; }
+    [class*="bg-[#020617]"], [class*="bg-white/[0.05]"], [class*="bg-black/"] { background: #ffffff !important; }
+    [class*="text-white"] { color: #111827 !important; }
+    [class*="border-white"] { border-color: #d1d5db !important; }
+    [class*="shadow-"] { box-shadow: none !important; }
+    [class*="backdrop-blur"] { backdrop-filter: none !important; }
+  }
+  .gallery-image-missing {
+    background: linear-gradient(135deg, #102542, #0b1a32 55%, #173a52);
+    position: relative;
+  }
+  .gallery-image-missing::after {
+    content: "J5 INTERNATIONAL CHURCH";
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,.55);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .2em;
+  }
   @keyframes archbishopWelcome {
     0% { opacity: 0; transform: translateY(18px) scale(0.94); }
     100% { opacity: 1; transform: translateY(0) scale(1); }
@@ -172,6 +202,7 @@ function ji() {
   let [burialApplication, setBurialApplication] = M.useState({ fullName: "", phone: "", branch: "MVUMA HQ", package: "", chairman: "", registrationDate: new Date().toISOString().slice(0, 10) });
 
   let [activeTab, setActiveTab] = M.useState("overview");
+  let [publicGalleryOpen, setPublicGalleryOpen] = M.useState(false);
 
   let [branches, setBranches] = M.useState(() => getStored("j5_branches", G1));
   let [branchSearch, setBranchSearch] = M.useState("");
@@ -1004,6 +1035,17 @@ function ji() {
     showToast("Ark Members CSV exported");
   };
 
+  const downloadPortalPdf = () => {
+    let previousTitle = document.title;
+    let portalName = activeTab === "pledges" ? "Mvuma Holy Land Pledges" : activeTab === "projects" ? "Cyberlyx Projects" : activeTab === "events" ? "J5 Events Calendar" : activeTab === "prophet-branch" ? "Assigned Branch Report" : activeTab === "pulpit" ? "Pulpit Live Report" : activeTab === "media" ? "Media Hub Report" : activeTab === "member-portal" ? "Member Portal Report" : "Cyberlyx J5 Control Centre Report";
+    document.title = portalName + (currentUser ? " - " + currentUser.username : "");
+    window.onafterprint = () => {
+      document.title = previousTitle;
+      window.onafterprint = null;
+    };
+    window.print();
+  };
+
   const openEditBranch = (b) => {
     setEditingBranch(b);
     setBranchForm({ ...b });
@@ -1358,6 +1400,32 @@ function ji() {
     return d("div", { className: "min-h-screen w-full bg-[#020617] text-white flex items-center justify-center text-[11px] tracking-widest", children: "RESTORING SECURE SESSION..." });
   }
   if (!isLoggedIn) {
+    if (publicGalleryOpen) {
+      return d("div", {
+        className: "min-h-screen w-full bg-[#07132b] text-white p-4 sm:p-6 md:p-10",
+        children: [
+          d("div", { className: "max-w-6xl mx-auto", children: [
+            d("div", { className: "flex items-center justify-between gap-4 border-b border-white/10 pb-5", children: [
+              d("div", { className: "flex items-center gap-3", children: [
+                i("div", { className: "w-11 h-11 rounded-xl bg-[#00D4FF] text-black font-black flex items-center justify-center shadow-[0_0_22px_rgba(0,212,255,0.45)]", children: "J5" }),
+                d("div", { children: [i("div", { className: "text-[12px] font-black tracking-[0.18em] text-[#00D4FF]", children: "J5 INTERNATIONAL CHURCH" }), i("div", { className: "mt-1 text-[11px] tracking-widest text-white/50", children: "CHURCH GALLERY • MVUMA HQ" })] })
+              ] }),
+              i("button", { onClick: () => setPublicGalleryOpen(false), className: "no-print h-9 px-4 rounded-full border border-white/15 bg-white/5 text-[10px] font-bold tracking-widest text-white/70 hover:text-white hover:border-[#00D4FF]/50", children: "RETURN TO LOGIN" })
+            ] }),
+            d("div", { className: "py-8 md:py-10", children: [
+              i("div", { className: "text-[10px] tracking-[0.24em] text-amber-300 font-bold", children: "WELCOME TO OUR CHURCH" }),
+              i("h1", { className: "mt-2 text-[30px] md:text-[46px] font-black tracking-tight", children: "Church Gallery" }),
+              i("p", { className: "mt-3 max-w-2xl text-[13px] leading-6 text-white/60", children: "A public collection of worship, fellowship, services, and church life from the J5 International Church family." })
+            ] }),
+            d("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5", children: initialAssets.filter(asset => asset.type === "IMG").map((asset, index) => d("figure", { key: asset.name, className: "overflow-hidden rounded-2xl border border-white/10 bg-white/[0.05] shadow-[0_18px_50px_rgba(0,0,0,0.25)]", children: [
+              d("div", { className: "aspect-[4/3] bg-[#102542] overflow-hidden", children: i("img", { src: asset.url, alt: asset.name, loading: index < 2 ? "eager" : "lazy", className: "w-full h-full object-cover", onError: e => { e.currentTarget.style.display = "none"; e.currentTarget.parentElement.className += " gallery-image-missing"; } }) }),
+              d("figcaption", { className: "p-4", children: [i("div", { className: "text-[12px] font-bold", children: asset.name }), i("div", { className: "mt-2 text-[10px] tracking-widest text-white/40", children: "J5 INTERNATIONAL CHURCH" })] })
+            ] })) }),
+            d("div", { className: "mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-5 text-[10px] tracking-widest text-white/40", children: [i("span", { children: "MVUMA HOLY LAND • J5 FAMILY • PUBLIC VIEW" }), i("button", { onClick: () => window.print(), className: "no-print text-amber-300 hover:text-amber-200", children: "PRINT GALLERY" })] })
+          ] })
+        ]
+      });
+    }
     return d("div", {
       className: "min-h-screen w-full max-w-[100vw] bg-[#020617] text-white flex items-center justify-center p-3 sm:p-4 relative overflow-hidden",
       children: [
@@ -1460,6 +1528,7 @@ function ji() {
                           children: authLoading ? "VERIFYING..." : (authAttempts ? ("AUTHENTICATE • " + authAttempts) : "AUTHENTICATE")
                         }),
                         i("p", { className: "text-center text-[10px] tracking-widest text-white/25 mt-2", children: "MVUMA HQ SECURE NODE • AES-256 • 47 BRANCHES" }),
+                        i("button", { type: "button", onClick: () => setPublicGalleryOpen(true), className: "w-full h-10 rounded-xl bg-amber-300/10 border border-amber-300/30 text-amber-200 text-[10px] font-bold tracking-widest flex items-center justify-center gap-2 hover:bg-amber-300/20 transition", children: [i(Vt, { className: "w-4 h-4" }), "VIEW CHURCH GALLERY"] }),
                         d("a", { href: "https://j5internationalchurch.org", target: "_blank", rel: "noopener noreferrer", className: "w-full h-10 rounded-xl bg-white/5 border border-white/10 text-white/70 text-[10px] font-bold tracking-widest flex items-center justify-center hover:bg-white/10 hover:text-white transition", children: "VIEW OUR WEBSITE" })
                       ]
                     }) : d("div", {
@@ -1644,6 +1713,7 @@ function ji() {
               d("div", {
                 className: "flex items-center gap-2",
                 children: [
+                  i("button", { onClick: downloadPortalPdf, title: "Download current portal as PDF", className: "no-print h-8 px-3 rounded-full bg-amber-300/15 border border-amber-300/30 text-amber-200 text-[10px] tracking-widest font-bold flex items-center gap-1.5 hover:bg-amber-300/25", children: [i(Kr, { className: "w-3.5 h-3.5" }), "DOWNLOAD PDF"] }),
                   d("div", { className: "relative", children: [
                     i("button", { onClick: () => { setShowNotifications(open => !open); setReadNotificationIds(ids => [...new Set([...ids, ...unreadNotifications.map(item => item.id)])]); }, title: "Notifications", className: "relative w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/70 hover:text-white", children: [i(Wr, { className: "w-4 h-4" }), unreadNotifications.length > 0 && i("span", { className: "absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center", children: unreadNotifications.length })] }),
                     showNotifications && d("div", { className: "absolute right-0 top-10 z-50 w-[min(340px,calc(100vw-24px))] rounded-xl bg-[#0a1229] border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.5)] p-3", children: [
