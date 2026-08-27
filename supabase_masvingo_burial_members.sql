@@ -403,7 +403,18 @@ values
   ('masvingo-burial-377', 377, '', '0717646980', '3.00', false, null, null, 'masvingo_burial_members_extracted.txt'),
   ('masvingo-burial-378', 378, 'Tamba Furcama', '0719281447', '3.00', false, null, null, 'masvingo_burial_members_extracted.txt'),
   ('masvingo-burial-379', 379, 'Christina Mariba', '0715591020', '6.00', false, null, null, 'masvingo_burial_members_extracted.txt'),
-  ('masvingo-burial-380', 380, '', '0784318238', '6.00', false, null, null, 'masvingo_burial_members_extracted.txt')
+  ('masvingo-burial-380', 380, '', '0784318238', '6.00', false, null, null, 'masvingo_burial_members_extracted.txt'),
+  ('masvingo-burial-381', 381, '', '071438864', '6.00', false, null, null, 'masvingo_burial_members_extracted.txt'),
+  ('masvingo-burial-382', 382, 'Catherine Ncube', '0710221074', '6.00', false, null, null, 'masvingo_burial_members_extracted.txt'),
+  ('masvingo-burial-383', 383, '', '0713289050', '3.00', false, null, null, 'masvingo_burial_members_extracted.txt'),
+  ('masvingo-burial-384', 384, '', '0715183103', '3.00', false, null, null, 'masvingo_burial_members_extracted.txt'),
+  ('masvingo-burial-385', 385, 'Nomsa Nkhali', '0716943591', '6.00', false, null, null, 'masvingo_burial_members_extracted.txt'),
+  ('masvingo-burial-386', 386, 'Iocadin Nkomo', '0785451065', '6.00', false, null, null, 'masvingo_burial_members_extracted.txt'),
+  ('masvingo-burial-387', 387, 'Simosami Siziba', '0718118626', '6.00', false, null, null, 'masvingo_burial_members_extracted.txt'),
+  ('masvingo-burial-388', 388, 'Monalisa Ncube', '0714861129', '6.00', false, null, null, 'masvingo_burial_members_extracted.txt'),
+  ('masvingo-burial-389', 389, 'Mitchelly Ozamba', '0784841456', '3.00', false, null, null, 'masvingo_burial_members_extracted.txt'),
+  ('masvingo-burial-390', 390, 'Rejoice Chele', '0782301278', '3.00', false, null, null, 'masvingo_burial_members_extracted.txt'),
+  ('masvingo-burial-391', 391, '', '0711835974', '3.00', false, null, null, 'masvingo_burial_members_extracted.txt')
 on conflict (id) do update set
   source_number = excluded.source_number,
   full_name = excluded.full_name,

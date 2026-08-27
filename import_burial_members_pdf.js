@@ -17,7 +17,7 @@ for (const line of text.split(/\r?\n/)) {
   const match = clean(line).match(/^(\d+)\s+(.+)$/);
   if (!match) continue;
   const number = Number(match[1]);
-  if (number < 1 || number > 380) continue;
+  if (number < 1 || number > 391) continue;
   let remainder = clean(match[2]);
   const amountMatch = remainder.match(/\$([0-9]+(?:\.[0-9]{2})?)$/);
   const amount = amountMatch ? amountMatch[1] : '';
