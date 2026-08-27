@@ -188,6 +188,14 @@ function ji() {
     { id: "t5", label: "Schedule Midweek Prophecy Live", done: false }
   ]));
   let [newTaskInput, setNewTaskInput] = M.useState("");
+  let [projects, setProjects] = M.useState(() => getStored("j5_projects", [
+    { id: "project-1", name: "Member Portal Stability", owner: "Software CIOS", status: "In progress", detail: "Member login, profile uploads, and portal reliability", progress: 82 },
+    { id: "project-2", name: "Branch Network Sync", owner: "Branch Operations", status: "Live", detail: "Branch nodes connected to MVUMA HQ", progress: 100 },
+    { id: "project-3", name: "Media Distribution Hub", owner: "Media Team", status: "In progress", detail: "Facebook, YouTube, Instagram, and website publishing", progress: 68 },
+    { id: "project-4", name: "Prophet Seat Command", owner: "Archbishop Makururu", status: "Protected", detail: "Pulpit live controls and sanctum access", progress: 91 }
+  ]));
+  let [projectForm, setProjectForm] = M.useState({ name: "", owner: "", status: "Planned", detail: "", progress: 0 });
+  let [editingProject, setEditingProject] = M.useState(null);
   let [contentCaption, setContentCaption] = M.useState("");
   let [selectedMediaChannels, setSelectedMediaChannels] = M.useState(["Facebook - Dr Andby Makururu"]);
   let [broadcastingState, setBroadcastingState] = M.useState("");
@@ -201,6 +209,7 @@ function ji() {
   let [newPositionForm, setNewPositionForm] = M.useState({ title: "", level: "Manager", assignedTo: "Unassigned" });
   let [positionFeedback, setPositionFeedback] = M.useState("");
   let [portalFeedback, setPortalFeedback] = M.useState([]);
+  let [reportReplyDrafts, setReportReplyDrafts] = M.useState({});
   let [chairladiesUpdate, setChairladiesUpdate] = M.useState({ careArea: "Women and family support", membersSupported: "", notes: "" });
   let [isGenPasswordVisible, setIsGenPasswordVisible] = M.useState(false);
   let [newStaffPerms, setNewStaffPerms] = M.useState(["media"]);
@@ -247,6 +256,7 @@ function ji() {
   M.default.useEffect(() => { saveStored("j5_positions", positions); }, [positions]);
   M.default.useEffect(() => { saveStored("j5_members", arkMembers); }, [arkMembers]);
   M.default.useEffect(() => { saveStored("j5_tasks", tasks); }, [tasks]);
+  M.default.useEffect(() => { saveStored("j5_projects", projects); }, [projects]);
   M.default.useEffect(() => { saveStored("j5_audit_logs", auditLogs); }, [auditLogs]);
   M.default.useEffect(() => { saveStored("j5_comments", liveComments); }, [liveComments]);
   M.default.useEffect(() => { saveStored("j5_assets", assetList); }, [assetList]);
@@ -749,6 +759,30 @@ function ji() {
     showToast("Staff account created for " + newUser.username);
   };
 
+  const handleSaveProject = () => {
+    if (!projectForm.name.trim()) {
+      showToast("Project name is required");
+      return;
+    }
+    let project = { ...projectForm, id: editingProject?.id || "project-" + Date.now(), name: projectForm.name.trim(), detail: projectForm.detail.trim(), progress: Math.max(0, Math.min(100, Number(projectForm.progress) || 0)) };
+    setProjects(items => editingProject ? items.map(item => item.id === editingProject.id ? project : item) : [project, ...items]);
+    setAuditLogs(logs => ["[" + getUtcTime() + " UTC] Project " + (editingProject ? "updated" : "created") + ": " + project.name, ...logs]);
+    setProjectForm({ name: "", owner: "", status: "Planned", detail: "", progress: 0 });
+    setEditingProject(null);
+    showToast("Project " + (editingProject ? "updated" : "created"));
+  };
+
+  const handleEditProject = (project) => {
+    setEditingProject(project);
+    setProjectForm({ name: project.name, owner: project.owner, status: project.status, detail: project.detail, progress: project.progress });
+  };
+
+  const handleDeleteProject = (project) => {
+    setProjects(items => items.filter(item => item.id !== project.id));
+    setAuditLogs(logs => ["[" + getUtcTime() + " UTC] Project deleted: " + project.name, ...logs]);
+    showToast("Project deleted");
+  };
+
   const handleUpdateStaffPassword = (staff) => {
     let newPassword = (staffPasswordDrafts[staff.id] || "").trim();
     if (newPassword.length < 8) {
@@ -817,7 +851,7 @@ function ji() {
     }
     let assignment = positions.find(position => position.assignedTo === currentUser.username);
     if (window.cyberlyxSupabase && currentUser.authUserId) {
-      let { error } = await window.cyberlyxSupabase.from("portal_feedback").insert({ submitted_by: currentUser.username, position_title: assignment?.title || currentUser.role, branch: currentUser.branch, feedback: positionFeedback.trim() });
+      let { error } = await window.cyberlyxSupabase.from("portal_feedback").insert({ submitted_by: currentUser.username, position_title: assignment?.title || currentUser.role, branch: currentUser.branch, feedback: positionFeedback.trim(), status: "New", admin_reply: "" });
       if (error) {
         showToast("Feedback could not be sent");
         return;
@@ -826,6 +860,18 @@ function ji() {
     setAuditLogs(logs => ["[" + getUtcTime() + " UTC] POSITION FEEDBACK - " + currentUser.username + " - " + (assignment?.title || currentUser.role) + ": " + positionFeedback.trim(), ...logs]);
     setPositionFeedback("");
     showToast("Feedback sent to Admin Control Centre");
+  };
+
+  const updatePortalFeedback = async (report, changes) => {
+    if (window.cyberlyxSupabase && report.id) {
+      let { error } = await window.cyberlyxSupabase.from("portal_feedback").update(changes).eq("id", report.id);
+      if (error) {
+        showToast("Report update failed");
+        return;
+      }
+    }
+    setPortalFeedback(items => items.map(item => item.id === report.id ? { ...item, ...changes } : item));
+    showToast("Report updated");
   };
 
   const submitChairladiesUpdate = () => {
@@ -1563,6 +1609,14 @@ function ji() {
                 i("p", { className: "mt-2 text-[11px] text-white/50", children: "Send a report, request, or update for your assigned branch." }),
                 i("textarea", { value: positionFeedback, onChange: e => setPositionFeedback(e.target.value), placeholder: "Write your branch report...", className: "mt-4 w-full h-28 rounded-xl bg-black/40 border border-white/10 p-3 text-[12px] resize-y" }),
                 i("button", { onClick: submitPositionFeedback, className: "mt-3 h-10 px-5 rounded-full bg-amber-300 text-black font-black text-[10px] tracking-widest hover:bg-amber-200", children: "SEND REPORT TO CONTROL CENTRE" })
+              ] }),
+              d("div", { className: "rounded-[20px] bg-white/[0.05] border border-white/10 p-5 md:p-6", children: [
+                d("div", { className: "flex items-center justify-between gap-3", children: [i("h3", { className: "font-bold tracking-widest text-[12px] text-[#00D4FF]", children: "MY REPORTS" }), i("span", { className: "text-[10px] text-white/40", children: portalFeedback.filter(item => item.submitted_by === currentUser.username).length + " REPORTS" })] }),
+                d("div", { className: "mt-4 space-y-3", children: portalFeedback.filter(item => item.submitted_by === currentUser.username).length ? portalFeedback.filter(item => item.submitted_by === currentUser.username).slice(0, 8).map(item => d("div", { key: item.id, className: "rounded-xl bg-black/30 border border-white/10 p-3", children: [
+                  d("div", { className: "flex items-center justify-between gap-3", children: [i("span", { className: "text-[10px] text-white/40", children: item.created_at ? new Date(item.created_at).toLocaleString() : "Just now" }), i("span", { className: "px-2 py-1 rounded-full text-[9px] border " + ((item.status || "New") === "Resolved" ? "text-emerald-300 border-emerald-500/20" : "text-amber-300 border-amber-300/20"), children: item.status || "New" })] }),
+                  i("p", { className: "mt-2 text-[12px] text-white/80", children: item.feedback }),
+                  item.admin_reply && i("div", { className: "mt-2 p-2 rounded-lg bg-[#00D4FF]/10 border border-[#00D4FF]/20 text-[11px] text-[#B8F3FF]", children: ["Control Centre: ", item.admin_reply] })
+                ] })) : i("div", { className: "text-[11px] text-white/40", children: "No reports submitted yet." }) })
               ] })
               ] })
             ]
@@ -1855,9 +1909,11 @@ function ji() {
                 d("div", { className: "flex items-center justify-between gap-3", children: [i("h3", { className: "font-bold tracking-widest text-[12px] text-amber-300", children: "PORTAL FEEDBACK" }), i("span", { className: "text-[10px] text-white/40", children: portalFeedback.length + " UPDATES" })] }),
                 i("div", { className: "mt-4 grid md:grid-cols-2 gap-3", children: portalFeedback.slice(0, 6).map(item => d("div", { key: item.id, className: "rounded-xl bg-black/30 border border-white/10 p-3", children: [
                   d("div", { className: "flex items-center justify-between gap-2", children: [i("span", { className: "font-bold text-[11px] text-[#00D4FF]", children: item.submitted_by }), i("span", { className: "text-[10px] text-white/30", children: item.branch })] }),
-                  i("div", { className: "mt-1 text-[10px] text-amber-300", children: item.position_title || "Position portal" }),
+                  d("div", { className: "mt-1 flex items-center justify-between gap-2", children: [i("div", { className: "text-[10px] text-amber-300", children: item.position_title || "Position portal" }), d("select", { value: item.status || "New", onChange: e => updatePortalFeedback(item, { status: e.target.value }), className: "h-7 px-2 rounded-lg bg-black/40 border border-white/10 text-[10px]", children: ["New", "Reviewed", "Resolved"].map(status => i("option", { key: status, value: status, children: status })) })] }),
                   i("p", { className: "mt-2 text-[12px] text-white/70", children: item.feedback }),
-                  i("div", { className: "mt-2 text-[9px] text-white/30", children: item.created_at ? new Date(item.created_at).toLocaleString() : "Just now" })
+                  i("div", { className: "mt-2 text-[9px] text-white/30", children: item.created_at ? new Date(item.created_at).toLocaleString() : "Just now" }),
+                  i("input", { value: reportReplyDrafts[item.id] ?? item.admin_reply ?? "", onChange: e => setReportReplyDrafts(drafts => ({ ...drafts, [item.id]: e.target.value })), placeholder: "Reply to this report", className: "mt-3 w-full h-8 px-2 rounded-lg bg-black/40 border border-white/10 text-[10px]" }),
+                  i("button", { onClick: () => updatePortalFeedback(item, { admin_reply: reportReplyDrafts[item.id] ?? item.admin_reply ?? "", status: "Reviewed" }), className: "mt-2 h-7 px-3 rounded-full bg-[#00D4FF]/15 border border-[#00D4FF]/30 text-[#00D4FF] text-[10px]", children: "SAVE REPLY" })
                 ] })) })
               ] }),
               d("div", { className: "rounded-[18px] bg-white/[0.05] border border-white/10 p-6 md:p-7", children: [
@@ -1876,24 +1932,28 @@ function ji() {
                 i("span", { className: "px-3 py-1 rounded-full bg-[#00D4FF]/10 border border-[#00D4FF]/20 text-[#00D4FF] text-[10px] tracking-widest font-bold", children: "LIVE WORKBOARD" })
               ] }),
               d("div", { className: "grid sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4", children: [
-                { label: "Active Projects", value: "4", color: "text-[#00D4FF]" },
+                { label: "Active Projects", value: projects.filter(project => project.status !== "Completed").length, color: "text-[#00D4FF]" },
                 { label: "Open Tasks", value: tasks.filter(task => !task.done).length, color: "text-amber-300" },
                 { label: "Completed Tasks", value: tasks.filter(task => task.done).length, color: "text-emerald-300" },
                 { label: "Branches Synced", value: branches.length, color: "text-white" }
               ].map(stat => d("div", { key: stat.label, className: "rounded-[18px] bg-white/[0.05] border border-white/10 p-4 md:p-5", children: [i("div", { className: "text-[10px] tracking-widest text-white/40", children: stat.label }), i("div", { className: "mt-2 text-[24px] font-black " + stat.color, children: stat.value })] })) }),
-              d("div", { className: "grid md:grid-cols-2 gap-4 md:gap-6", children: [
-                [
-                  { name: "Member Portal Stability", owner: "Software CIOS", status: "In progress", detail: "Member login, profile uploads, and portal reliability", progress: 82 },
-                  { name: "Branch Network Sync", owner: "Branch Operations", status: "Live", detail: branches.length + " branch nodes connected to MVUMA HQ", progress: 100 },
-                  { name: "Media Distribution Hub", owner: "Media Team", status: "In progress", detail: "Facebook, YouTube, Instagram, and website publishing", progress: 68 },
-                  { name: "Prophet Seat Command", owner: "Archbishop Makururu", status: "Protected", detail: "Pulpit live controls and sanctum access", progress: 91 }
-                ].map(project => d("div", { key: project.name, className: "rounded-[18px] bg-white/[0.05] border border-white/10 p-5 md:p-6", children: [
-                  d("div", { className: "flex items-start justify-between gap-3", children: [d("div", { children: [i("h3", { className: "font-black text-[14px] tracking-wide", children: project.name }), i("p", { className: "mt-1 text-[11px] text-white/50", children: project.detail })] }), i("span", { className: "shrink-0 px-2 py-1 rounded-full text-[9px] tracking-widest border " + (project.status === "Live" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-300" : "bg-amber-500/10 border-amber-500/20 text-amber-300"), children: project.status })] }),
-                  d("div", { className: "mt-5 flex items-center justify-between text-[10px]", children: [i("span", { className: "text-white/40", children: "OWNER" }), i("span", { className: "font-bold text-[#00D4FF]", children: project.owner })] }),
-                  d("div", { className: "mt-2 h-2 rounded-full bg-black/40 overflow-hidden", children: i("div", { className: "h-full rounded-full bg-[#00D4FF]", style: { width: project.progress + "%" } }) }),
-                  i("div", { className: "mt-2 text-right text-[10px] text-white/40", children: project.progress + "% complete" })
-                ] }))
+              d("div", { className: "rounded-[18px] bg-white/[0.05] border border-white/10 p-5 md:p-6", children: [
+                i("h3", { className: "font-bold tracking-widest text-[12px] text-[#00D4FF]", children: editingProject ? "EDIT PROJECT" : "CREATE PROJECT" }),
+                d("div", { className: "mt-4 grid md:grid-cols-2 gap-3", children: [
+                  i("input", { value: projectForm.name, onChange: e => setProjectForm(form => ({ ...form, name: e.target.value })), placeholder: "Project name", className: "h-10 px-3 rounded-lg bg-black/40 border border-white/10 text-[12px]" }),
+                  i("input", { value: projectForm.detail, onChange: e => setProjectForm(form => ({ ...form, detail: e.target.value })), placeholder: "Project description", className: "h-10 px-3 rounded-lg bg-black/40 border border-white/10 text-[12px]" }),
+                  d("select", { value: projectForm.owner, onChange: e => setProjectForm(form => ({ ...form, owner: e.target.value })), className: "h-10 px-3 rounded-lg bg-black/40 border border-white/10 text-[12px]", children: [i("option", { value: "", children: "Select owner" }), ...staffList.map(staff => i("option", { key: staff.id, value: staff.username, children: staff.username }))] }),
+                  d("select", { value: projectForm.status, onChange: e => setProjectForm(form => ({ ...form, status: e.target.value })), className: "h-10 px-3 rounded-lg bg-black/40 border border-white/10 text-[12px]", children: ["Planned", "In progress", "Live", "Protected", "Completed"].map(status => i("option", { key: status, value: status, children: status })) }),
+                  d("label", { className: "flex items-center gap-3 text-[11px] text-white/60", children: ["Progress", i("input", { type: "range", min: "0", max: "100", value: projectForm.progress, onChange: e => setProjectForm(form => ({ ...form, progress: e.target.value })), className: "flex-1 accent-[#00D4FF]" }), i("span", { className: "font-mono text-[#00D4FF]", children: projectForm.progress + "%" })] }),
+                  d("div", { className: "flex gap-2 justify-end", children: [editingProject && i("button", { onClick: () => { setEditingProject(null); setProjectForm({ name: "", owner: "", status: "Planned", detail: "", progress: 0 }); }, className: "h-10 px-4 rounded-full bg-white/5 border border-white/10 text-[10px]", children: "CANCEL" }), i("button", { onClick: handleSaveProject, className: "h-10 px-5 rounded-full bg-[#00D4FF] text-black font-black text-[10px] tracking-widest", children: editingProject ? "UPDATE PROJECT" : "CREATE PROJECT" })] })
+                ] })
               ] }),
+              d("div", { className: "grid md:grid-cols-2 gap-4 md:gap-6", children: projects.map(project => d("div", { key: project.id, className: "rounded-[18px] bg-white/[0.05] border border-white/10 p-5 md:p-6", children: [
+                d("div", { className: "flex items-start justify-between gap-3", children: [d("div", { className: "min-w-0", children: [i("h3", { className: "font-black text-[14px] tracking-wide truncate", children: project.name }), i("p", { className: "mt-1 text-[11px] text-white/50", children: project.detail || "No description provided" })] }), i("span", { className: "shrink-0 px-2 py-1 rounded-full text-[9px] tracking-widest border " + (project.status === "Completed" || project.status === "Live" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-300" : "bg-amber-500/10 border-amber-500/20 text-amber-300"), children: project.status })] }),
+                d("div", { className: "mt-5 flex items-center justify-between text-[10px]", children: [i("span", { className: "text-white/40", children: "OWNER" }), i("span", { className: "font-bold text-[#00D4FF]", children: project.owner || "Unassigned" })] }),
+                d("div", { className: "mt-2 h-2 rounded-full bg-black/40 overflow-hidden", children: i("div", { className: "h-full rounded-full bg-[#00D4FF]", style: { width: project.progress + "%" } }) }),
+                d("div", { className: "mt-2 flex items-center justify-between text-[10px] text-white/40", children: [i("span", { children: project.progress + "% complete" }), d("div", { className: "flex gap-2", children: [i("button", { onClick: () => handleEditProject(project), className: "text-[#00D4FF]", children: "EDIT" }), i("button", { onClick: () => handleDeleteProject(project), className: "text-red-300", children: "DELETE" })] })] })
+              ] })) }),
               d("div", { className: "rounded-[18px] bg-white/[0.05] border border-white/10 p-5 md:p-6", children: [
                 d("div", { className: "flex items-center justify-between gap-3", children: [i("h3", { className: "font-bold tracking-widest text-[12px]", children: "CURRENT DELIVERY TASKS" }), i("span", { className: "text-[10px] text-white/40", children: tasks.length + " TASKS" })] }),
                 d("div", { className: "mt-4 space-y-2", children: tasks.slice(0, 8).map(task => d("div", { key: task.id, className: "flex items-center gap-3 p-3 rounded-xl bg-black/30 border border-white/10", children: [i("span", { className: "w-2 h-2 rounded-full shrink-0 " + (task.done ? "bg-emerald-400" : "bg-amber-300") }), i("span", { className: "text-[11px] " + (task.done ? "line-through text-white/40" : "text-white/80"), children: task.label }), i("span", { className: "ml-auto text-[9px] tracking-widest text-white/30", children: task.done ? "DONE" : "OPEN" })] })) })
