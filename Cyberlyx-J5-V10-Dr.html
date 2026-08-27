@@ -488,6 +488,8 @@ function ji() {
           status: member.status || "Active",
           tithe: member.tithe_pledge || "$0",
           joined: member.joined_date || "",
+          burialSocietyRegistered: !!member.burial_society_registered,
+          burialSocietyPackage: member.burial_society_package || "",
           authUserId: member.auth_user_id
         })));
       }
@@ -628,7 +630,7 @@ function ji() {
   let visiblePledges = isAdminUser ? pledges : pledges.filter(pledge => pledge.owner_key === pledgeOwnerKey || (pledge.auth_user_id && pledge.auth_user_id === currentUser?.authUserId));
   let burialSocietyMembers = arkMembers.map(member => {
     let savedProfile = getStored("j5_member_profile_" + (member.id || member.email || member.name), {});
-    return { ...member, burialSocietyRegistered: !!savedProfile.burialSocietyRegistered, burialSocietyPackage: savedProfile.burialSocietyPackage || "" };
+    return { ...member, burialSocietyRegistered: member.burialSocietyRegistered || !!savedProfile.burialSocietyRegistered, burialSocietyPackage: member.burialSocietyPackage || savedProfile.burialSocietyPackage || "" };
   }).filter(member => member.burialSocietyRegistered);
     let notificationItems = currentUser ? portalFeedback.filter(item => isAdminUser ? (item.status || "New") === "New" : item.submitted_by === currentUser.username && item.admin_reply) : [];
     let unreadNotifications = notificationItems.filter(item => !readNotificationIds.includes(item.id));
