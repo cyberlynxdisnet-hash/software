@@ -627,7 +627,7 @@ function ji() {
   let isBurialStaff = isBurialSocietyStaff(currentUser);
   let isProphetUser = currentUser && !isMember && !isMediaTeam && !isAdminUser && ["Prophet", "Prophetess", "Prophet / Prophetess"].includes(currentUser.role);
   let assignedPosition = currentUser && positions.find(position => position.assignedTo === currentUser.username);
-  let isPositionUser = currentUser && !isMember && !isMediaTeam && !isAdminUser && !isProphetUser;
+  let isPositionUser = currentUser && !isMember && !isMediaTeam && !isAdminUser && !isProphetUser && !isBurialStaff;
   let assignedBranch = currentUser && branches.find(branch => branch.name === currentUser.branch);
   let assignedBranchMembers = currentUser && arkMembers.filter(member => member.branch === currentUser.branch);
   let assignedBranchEvents = currentUser && eventList.filter(event => !event.branch || event.branch === "All Branches" || event.branch === currentUser.branch || event.branch === assignedBranch?.id);
