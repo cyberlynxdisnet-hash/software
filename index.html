@@ -225,9 +225,12 @@ function ji() {
 
   let [liveSyncEnabled, setLiveSyncEnabled] = M.useState(false);
   let [liveViewersCount, setLiveViewersCount] = M.useState(3842);
+  let [liveStartedAt, setLiveStartedAt] = M.useState(null);
+  let [liveDuration, setLiveDuration] = M.useState("00:00:00");
   let [showRtmpKeys, setShowRtmpKeys] = M.useState(false);
   let [broadcastingStatus, setBroadcastingStatus] = M.useState("idle");
   let [projectorSlide, setProjectorSlide] = M.useState(1);
+  let projectorSlides = ["Welcome to J5 International Church", "Sunday Prophecy Service", "Prayer, Healing & Deliverance", "Branch Announcements", "Giving & Offering", "Thank You for Joining Us"];
   let [liveComments, setLiveComments] = M.useState(() => getStored("j5_comments", initialLiveComments));
   let [commentReplyText, setCommentReplyText] = M.useState("");
 
@@ -250,6 +253,8 @@ function ji() {
   let [isSanctumLoading, setIsSanctumLoading] = M.useState(false);
   let [toastMessage, setToastMessage] = M.useState("");
   let [showArchbishopWelcome, setShowArchbishopWelcome] = M.useState(false);
+  let [showNotifications, setShowNotifications] = M.useState(false);
+  let [readNotificationIds, setReadNotificationIds] = M.useState(() => getStored("j5_read_notifications", []));
 
   M.default.useEffect(() => { saveStored("j5_branches", branches); }, [branches]);
   M.default.useEffect(() => { saveStored("j5_staff", staffList); }, [staffList]);
@@ -261,6 +266,7 @@ function ji() {
   M.default.useEffect(() => { saveStored("j5_comments", liveComments); }, [liveComments]);
   M.default.useEffect(() => { saveStored("j5_assets", assetList); }, [assetList]);
   M.default.useEffect(() => { saveStored("j5_events", eventList); }, [eventList]);
+  M.default.useEffect(() => { saveStored("j5_read_notifications", readNotificationIds); }, [readNotificationIds]);
 
   M.default.useEffect(() => {
     if (!window.cyberlyxSupabase) {
@@ -347,7 +353,7 @@ function ji() {
       let events = results[0]?.data;
       let assets = results[1]?.data;
       let mediaTasks = results[2]?.data;
-      if (events && events.length) setEventList(events.map(c => ({ ...c, id: c.id, date: c.date || new Date(c.event_date).toLocaleString(), location: c.location || "", type: c.event_type || c.type || "Event", userAttending: false })));
+      if (events && events.length) setEventList(events.map(c => ({ ...c, id: c.id, date: c.date || new Date(c.event_date).toLocaleString(), location: c.location || "", branch: c.branch || c.branch_name || c.branch_id || "All Branches", type: c.event_type || c.type || "Event", userAttending: false })));
       if (!isMemberSession && assets && assets.length) setAssetLibrary(assets.map(c => ({ ...c, name: c.name, type: c.asset_type || c.type || "DOC", size: c.file_size || c.size || "", url: c.asset_url || c.url || "" })));
       if (!isMemberSession && mediaTasks && mediaTasks.length) setTasks(mediaTasks.map(c => ({ ...c, id: c.id, label: c.label || c.title, done: c.status === "Done" || c.done === true })));
     };
@@ -499,6 +505,9 @@ function ji() {
   let isPositionUser = currentUser && !isMember && !isMediaTeam && !isAdminUser && !isProphetUser;
   let assignedBranch = currentUser && branches.find(branch => branch.name === currentUser.branch);
   let assignedBranchMembers = currentUser && arkMembers.filter(member => member.branch === currentUser.branch);
+  let assignedBranchEvents = currentUser && eventList.filter(event => !event.branch || event.branch === "All Branches" || event.branch === currentUser.branch || event.branch === assignedBranch?.id);
+    let notificationItems = currentUser ? portalFeedback.filter(item => isAdminUser ? (item.status || "New") === "New" : item.submitted_by === currentUser.username && item.admin_reply) : [];
+    let unreadNotifications = notificationItems.filter(item => !readNotificationIds.includes(item.id));
   let positionPortalConfig = {
     "Senate": { summary: "Leadership decisions, resolutions, and governance follow-up.", actions: ["Record resolution", "Review leadership matter", "Submit governance update"] },
     "Elders": { summary: "Member care, spiritual support, visits, and escalation of urgent needs.", actions: ["Log care visit", "Record prayer need", "Escalate member concern"] },
@@ -1217,6 +1226,23 @@ function ji() {
   }, [liveSyncEnabled]);
 
   M.default.useEffect(() => {
+    if (!liveStartedAt) {
+      setLiveDuration("00:00:00");
+      return;
+    }
+    let updateDuration = () => {
+      let elapsed = Math.max(0, Math.floor((Date.now() - liveStartedAt) / 1000));
+      let hours = String(Math.floor(elapsed / 3600)).padStart(2, "0");
+      let minutes = String(Math.floor((elapsed % 3600) / 60)).padStart(2, "0");
+      let seconds = String(elapsed % 60).padStart(2, "0");
+      setLiveDuration(hours + ":" + minutes + ":" + seconds);
+    };
+    updateDuration();
+    let timer = setInterval(updateDuration, 1000);
+    return () => clearInterval(timer);
+  }, [liveStartedAt]);
+
+  M.default.useEffect(() => {
     if (activeTab !== "pulpit") {
       setLiveSyncEnabled(false);
       setBroadcastingStatus("idle");
@@ -1535,6 +1561,13 @@ function ji() {
               d("div", {
                 className: "flex items-center gap-2",
                 children: [
+                  d("div", { className: "relative", children: [
+                    i("button", { onClick: () => { setShowNotifications(open => !open); setReadNotificationIds(ids => [...new Set([...ids, ...unreadNotifications.map(item => item.id)])]); }, title: "Notifications", className: "relative w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/70 hover:text-white", children: [i(Wr, { className: "w-4 h-4" }), unreadNotifications.length > 0 && i("span", { className: "absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center", children: unreadNotifications.length })] }),
+                    showNotifications && d("div", { className: "absolute right-0 top-10 z-50 w-[min(340px,calc(100vw-24px))] rounded-xl bg-[#0a1229] border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.5)] p-3", children: [
+                      d("div", { className: "flex items-center justify-between gap-2", children: [i("div", { className: "text-[10px] tracking-widest font-bold", children: "NOTIFICATIONS" }), i("button", { onClick: () => setShowNotifications(false), className: "text-[10px] text-white/40", children: "CLOSE" })] }),
+                      notificationItems.length ? d("div", { className: "mt-2 space-y-2 max-h-60 overflow-auto", children: notificationItems.slice(0, 6).map(item => d("div", { key: item.id, className: "p-2 rounded-lg bg-black/30 border border-white/10", children: [i("div", { className: "text-[10px] font-bold text-[#00D4FF]", children: isAdminUser ? item.submitted_by + " sent a report" : "Control Centre replied" }), i("div", { className: "mt-1 text-[10px] text-white/60 truncate", children: isAdminUser ? item.feedback : item.admin_reply })] })) }) : i("div", { className: "mt-3 text-[10px] text-white/40", children: "No new notifications" })
+                    ] })
+                  ] }),
                   d("div", {
                     className: "hidden lg:flex items-center gap-2",
                     children: [
@@ -1604,6 +1637,14 @@ function ji() {
                     d("div", { className: "p-3 rounded-xl bg-black/30 border border-white/10", children: [i("div", { className: "text-[10px] text-white/40", children: "LOCATION" }), i("div", { className: "mt-1", children: assignedBranch?.address || "Branch location not listed" })] })
                   ] })
                 ] }),
+              d("div", { className: "lg:col-span-3 rounded-[18px] bg-white/[0.05] border border-white/10 p-5 md:p-6", children: [
+                d("div", { className: "flex items-center justify-between gap-3", children: [i("h3", { className: "font-bold tracking-widest text-[12px] text-[#00D4FF]", children: "BRANCH EVENTS" }), i("span", { className: "text-[10px] text-white/40", children: assignedBranchEvents.length + " EVENTS" })] }),
+                d("div", { className: "mt-4 grid md:grid-cols-2 gap-3", children: assignedBranchEvents.length ? assignedBranchEvents.slice(0, 6).map(event => d("div", { key: event.id, className: "rounded-xl bg-black/30 border border-white/10 p-3", children: [
+                  d("div", { className: "flex items-start justify-between gap-3", children: [i("div", { className: "font-bold text-[12px]", children: event.title }), i("span", { className: "shrink-0 text-[9px] text-amber-300", children: event.branch || "All Branches" })] }),
+                  i("div", { className: "mt-2 text-[10px] text-[#00D4FF]", children: [event.date, " • ", event.type] }),
+                  i("div", { className: "mt-1 text-[10px] text-white/50", children: event.location || "Location pending" })
+                ] })) : i("div", { className: "text-[11px] text-white/40", children: "No events scheduled for this branch." }) })
+              ] }),
               d("div", { className: "rounded-[20px] bg-white/[0.05] border border-white/10 p-5 md:p-6", children: [
                 i("h3", { className: "font-bold tracking-widest text-[12px] text-amber-300", children: "BRANCH REPORT TO CONTROL CENTRE" }),
                 i("p", { className: "mt-2 text-[11px] text-white/50", children: "Send a report, request, or update for your assigned branch." }),
@@ -2342,12 +2383,13 @@ function ji() {
                     d("div", {
                       className: "mt-5 flex flex-wrap items-center gap-3",
                       children: [
-                        i("button", { onClick: () => { setLiveSyncEnabled(c => !c); showToast(liveSyncEnabled ? "Live broadcast ended" : "LIVE STREAM STARTED"); }, className: "h-12 md:h-14 px-6 md:px-8 rounded-full font-black tracking-[0.2em] text-[12px] md:text-[13px] transition shadow-[0_0_30px_rgba(0,212,255,0.4)] " + (liveSyncEnabled ? "bg-red-500 text-white shadow-[0_0_30px_rgba(239,68,68,0.6)]" : "bg-[#00D4FF] text-black"), children: liveSyncEnabled ? "STOP LIVE" : "GO LIVE" }),
+                        i("button", { onClick: () => { let nextLive = !liveSyncEnabled; setLiveSyncEnabled(nextLive); setLiveStartedAt(nextLive ? Date.now() : null); setBroadcastingState(nextLive ? "Broadcast connected • Facebook + YouTube + Web" : "Broadcast ended safely"); showToast(nextLive ? "Live broadcast started" : "Live broadcast ended"); }, className: "h-12 md:h-14 px-6 md:px-8 rounded-full font-black tracking-[0.2em] text-[12px] md:text-[13px] transition shadow-[0_0_30px_rgba(0,212,255,0.4)] " + (liveSyncEnabled ? "bg-red-500 text-white shadow-[0_0_30px_rgba(239,68,68,0.6)]" : "bg-[#00D4FF] text-black"), children: liveSyncEnabled ? "STOP LIVE" : "GO LIVE" }),
                         d("div", {
                           className: "flex gap-2 flex-wrap",
                           children: [
                             d("div", { className: "h-12 md:h-14 px-3.5 md:px-4 rounded-xl bg-black/40 border border-white/10 flex flex-col justify-center", children: [i("div", { className: "text-[9px] md:text-[10px] tracking-widest text-white/40", children: "BITRATE" }), i("div", { className: "font-mono font-bold text-[#00D4FF] text-[11px] md:text-[12px]", children: "4500 kbps" })] }),
                             d("div", { className: "h-12 md:h-14 px-3.5 md:px-4 rounded-xl bg-black/40 border border-white/10 flex flex-col justify-center", children: [i("div", { className: "text-[9px] md:text-[10px] tracking-widest text-white/40", children: "VIEWERS" }), i("div", { className: "font-mono font-bold text-[11px] md:text-[12px]", children: liveViewersCount.toLocaleString() })] }),
+                            d("div", { className: "h-12 md:h-14 px-3.5 md:px-4 rounded-xl bg-black/40 border border-white/10 flex flex-col justify-center", children: [i("div", { className: "text-[9px] md:text-[10px] tracking-widest text-white/40", children: "DURATION" }), i("div", { className: "font-mono font-bold text-[11px] md:text-[12px] text-amber-300", children: liveDuration })] }),
                             d("div", { className: "h-12 md:h-14 px-3.5 md:px-4 rounded-xl bg-black/40 border border-white/10 flex flex-col justify-center", children: [i("div", { className: "text-[9px] md:text-[10px] tracking-widest text-white/40", children: "DESTINATIONS" }), i("div", { className: "text-[10px] md:text-[11px] font-bold", children: "Dr Andby FB • YouTube • Web" })] })
                           ]
                         })
@@ -2367,9 +2409,9 @@ function ji() {
                           className: "rounded-xl bg-black/40 border border-white/10 p-4",
                           children: [
                             i("div", { className: "text-[11px] tracking-widest font-bold", children: "PROJECTOR CONTROL" }),
-                            d("div", { className: "mt-3 flex gap-2", children: [d("button", { onClick: () => setProjectorSlide(c => Math.max(1, c - 1)), className: "flex-1 h-10 rounded-full bg-white/5 border border-white/10 text-[11px] hover:bg-white/10", children: ["Prev • Slide ", projectorSlide - 1] }), d("button", { onClick: () => setProjectorSlide(c => c + 1), className: "flex-1 h-10 rounded-full bg-white text-black font-bold text-[11px] hover:bg-white/90", children: ["Next • Slide ", projectorSlide + 1] })] }),
+                            d("div", { className: "mt-3 flex gap-2", children: [d("button", { onClick: () => setProjectorSlide(c => Math.max(1, c - 1)), className: "flex-1 h-10 rounded-full bg-white/5 border border-white/10 text-[11px] hover:bg-white/10", children: ["Prev • Slide ", Math.max(1, projectorSlide - 1)] }), d("button", { onClick: () => setProjectorSlide(c => Math.min(projectorSlides.length, c + 1)), className: "flex-1 h-10 rounded-full bg-white text-black font-bold text-[11px] hover:bg-white/90", children: ["Next • Slide ", Math.min(projectorSlides.length, projectorSlide + 1)] })] }),
                             d("div", { className: "mt-2 grid grid-cols-2 gap-2", children: [i("button", { onClick: toggleProjectorBlackout, className: "h-10 rounded-full border text-[11px] font-bold tracking-widest " + (isProjectorBlackout ? "bg-black border-white/20 text-white" : "bg-[#00D4FF]/15 border-[#00D4FF]/30 text-[#00D4FF]"), children: isProjectorBlackout ? "BLACKOUT ON" : "BLACKOUT" }), d("div", { className: "h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[11px]", children: ["Slide ", projectorSlide, " • ", broadcastingStatus] })] }),
-                            i("div", { className: "mt-3 h-[54px] rounded-xl border flex items-center justify-center text-[10px] tracking-widest " + (isProjectorBlackout ? "bg-black border-white/10 text-white/20" : "bg-white text-black font-black"), children: isProjectorBlackout ? "PROJECTOR BLACKOUT" : ("PROJECTING SLIDE " + projectorSlide + " • DR ANDBY MAKURURU") })
+                            i("div", { className: "mt-3 h-[54px] rounded-xl border flex items-center justify-center text-[10px] tracking-widest text-center px-3 " + (isProjectorBlackout ? "bg-black border-white/10 text-white/20" : "bg-white text-black font-black"), children: isProjectorBlackout ? "PROJECTOR BLACKOUT" : ("SLIDE " + projectorSlide + " • " + projectorSlides[projectorSlide - 1]) })
                           ]
                         })
                       ]
