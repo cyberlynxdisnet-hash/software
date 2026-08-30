@@ -222,6 +222,7 @@ function ji() {
 
   let [activeTab, setActiveTab] = M.useState("overview");
   let [publicGalleryOpen, setPublicGalleryOpen] = M.useState(false);
+  let [publicBookOpen, setPublicBookOpen] = M.useState(false);
 
   let [branches, setBranches] = M.useState(() => mergeSouthAfricanBranches(getStored("j5_branches", G1)));
   let [branchSearch, setBranchSearch] = M.useState("");
@@ -1867,6 +1868,63 @@ function ji() {
     return d("div", { className: "min-h-screen w-full bg-[#020617] text-white flex items-center justify-center text-[11px] tracking-widest", children: "RESTORING SECURE SESSION..." });
   }
   if (!isLoggedIn) {
+    if (publicBookOpen) {
+      return d("main", {
+        className: "min-h-screen w-full bg-[#07132b] text-white p-4 sm:p-6 md:p-10",
+        children: d("div", {
+          className: "max-w-6xl mx-auto",
+          children: [
+            d("header", {
+              className: "flex items-center justify-between gap-4 border-b border-white/10 pb-5",
+              children: [
+                d("div", {
+                  className: "flex items-center gap-3",
+                  children: [
+                    i("div", { className: "w-11 h-11 rounded-xl bg-amber-300 text-[#07132b] font-black flex items-center justify-center shadow-[0_0_22px_rgba(251,191,36,0.3)]", children: "J5" }),
+                    d("div", { children: [i("div", { className: "text-[12px] font-black tracking-[0.18em] text-amber-300", children: "J5 INTERNATIONAL CHURCH" }), i("div", { className: "mt-1 text-[11px] tracking-widest text-white/50", children: "BOOK LIBRARY" })] })
+                  ]
+                }),
+                i("button", { type: "button", onClick: () => setPublicBookOpen(false), className: "no-print h-9 px-4 rounded-full border border-white/15 bg-white/5 text-[10px] font-bold tracking-widest text-white/70 hover:text-white hover:border-amber-300/50", children: "RETURN TO LOGIN" })
+              ]
+            }),
+            d("section", {
+              className: "py-8 md:py-10",
+              children: [
+                d("div", {
+                  className: "grid grid-cols-1 md:grid-cols-3 gap-8 items-start",
+                  children: [
+                    d("div", { className: "md:col-span-1", children: i("img", { src: "books/the-uniter-of-africa-cover.png", alt: "The Uniter of Africa book cover", className: "w-full max-w-[360px] mx-auto rounded-xl shadow-[0_20px_55px_rgba(0,0,0,0.4)] border border-amber-300/20" }) }),
+                    d("div", {
+                      className: "md:col-span-2",
+                      children: [
+                        i("div", { className: "text-[10px] tracking-[0.24em] text-amber-300 font-bold", children: "NOW AVAILABLE TO READ" }),
+                        i("h1", { className: "mt-2 text-[30px] md:text-[46px] font-black tracking-tight", children: "The Uniter of Africa" }),
+                        i("p", { className: "mt-3 text-[15px] leading-7 text-white/70", children: "A vision of faith, unity, heritage, and progress for a greater tomorrow." }),
+                        i("p", { className: "mt-4 text-[12px] leading-6 text-white/50", children: "Written by Siphiwe Jr. Khumalo and Athenkosi Tshabalala." }),
+                        d("div", {
+                          className: "mt-6 flex flex-wrap gap-3",
+                          children: [
+                            i("a", { href: "books/the-uniter-of-africa.pdf", target: "_blank", rel: "noopener noreferrer", className: "h-11 px-5 rounded-xl bg-amber-300 text-[#07132b] text-[11px] font-black tracking-widest flex items-center justify-center shadow-[0_0_24px_rgba(251,191,36,0.25)] hover:bg-amber-200 transition", children: "READ FULL BOOK" }),
+                            i("a", { href: "books/the-uniter-of-africa.pdf", download: "The-Uniter-of-Africa.pdf", className: "h-11 px-5 rounded-xl bg-white/5 border border-white/15 text-white text-[11px] font-bold tracking-widest flex items-center justify-center hover:bg-white/10 hover:border-amber-300/40 transition", children: "DOWNLOAD PDF" })
+                          ]
+                        })
+                      ]
+                    })
+                  ]
+                }),
+                d("div", {
+                  className: "mt-10 overflow-hidden rounded-2xl border border-white/10 bg-black/30 shadow-[0_20px_55px_rgba(0,0,0,0.3)]",
+                  children: [
+                    d("div", { className: "flex items-center justify-between gap-3 px-4 py-3 border-b border-white/10", children: [i("h2", { className: "text-[11px] font-bold tracking-widest text-white/70", children: "READ ONLINE" }), i("a", { href: "books/the-uniter-of-africa.pdf", target: "_blank", rel: "noopener noreferrer", className: "text-[10px] font-bold tracking-widest text-amber-300 hover:text-amber-200", children: "OPEN IN NEW TAB" })] }),
+                    i("iframe", { src: "books/the-uniter-of-africa.pdf#view=FitH", title: "The Uniter of Africa PDF reader", className: "w-full bg-white", style: { height: "min(78vh, 1000px)" } })
+                  ]
+                })
+              ]
+            })
+          ]
+        })
+      });
+    }
     if (publicGalleryOpen) {
       return d("div", {
         className: "min-h-screen w-full bg-[#07132b] text-white p-4 sm:p-6 md:p-10",
@@ -1995,6 +2053,7 @@ function ji() {
                           children: authLoading ? "VERIFYING..." : (authAttempts ? ("AUTHENTICATE • " + authAttempts) : "AUTHENTICATE")
                         }),
                         i("p", { className: "text-center text-[10px] tracking-widest text-white/25 mt-2", children: "MVUMA HQ SECURE NODE • AES-256 • 47 BRANCHES" }),
+                        i("button", { type: "button", onClick: () => setPublicBookOpen(true), className: "w-full h-10 rounded-xl bg-amber-300 text-[#07132b] text-[10px] font-black tracking-widest flex items-center justify-center gap-2 hover:bg-amber-200 transition", children: "READ: THE UNITER OF AFRICA" }),
                         i("button", { type: "button", onClick: () => setPublicGalleryOpen(true), className: "w-full h-10 rounded-xl bg-amber-300/10 border border-amber-300/30 text-amber-200 text-[10px] font-bold tracking-widest flex items-center justify-center gap-2 hover:bg-amber-300/20 transition", children: [i(Vt, { className: "w-4 h-4" }), "VIEW CHURCH GALLERY"] }),
                         d("a", { href: "https://j5internationalchurch.org", target: "_blank", rel: "noopener noreferrer", className: "w-full h-10 rounded-xl bg-white/5 border border-white/10 text-white/70 text-[10px] font-bold tracking-widest flex items-center justify-center hover:bg-white/10 hover:text-white transition", children: "VIEW OUR WEBSITE" })
                       ]
